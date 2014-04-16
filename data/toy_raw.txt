@@ -1,0 +1,53 @@
+TERRITORY:	RAS DATA SET TOY
+
+DEFAULT SPEED on MAIN TRACKS, WEST -> EAST:	80	mph
+DEFAULT SPEED on MAIN TRACKS, EAST -> WEST:	70	mph
+MAXIMUM SPEED on SIDINGS, both directions, all trains:	20	mph
+MAXIMUM SPEED on CROSSOVERS and SWITCHES, both directions, all trains:	15	mph
+
+MOW:	between nodes 11 and 12, during the time period between 0 to 20 minutes.
+
+ARC ID (WEST -> EAST, all bidirectional):				(0,1)	(1,2)	(1,3)	(2,4)	(3,5)	(4,5)	(5,6)	(6,7)	(7,8)	(7,9)	(9,10)	(8,11)	(10,11)	(11,12)
+TRACKTYPE (Main 0, 1, 2, Switch (SW), Siding (S), Crossover (C)):	0	SW	0	S	0	SW	0	0	0	SW	S	0	SW	0
+LENGTH (miles):								18	0.3	1	2	1	0.3	20	18	1	0.3	2	1	0.3	20
+
+TRAINS: 3
+
+HEADER:	C1				
+ENTRY TIME (from current time in minutes):	0				
+ORIGIN NODE:	0				
+DESTINATION NODE:	12				
+DIRECTION:	EASTBOUND				
+SPEED MULTIPLIER:	0.75				
+TRAIN LENGTH (miles):	1				
+TOB:	75				
+HAZMAT (IH: YES or NO):	NO				
+SA STATUS AT ORIGIN:	0				
+SCHEDULED ARRIVAL (NODE: minutes from current time):	6:	50	,	12:	100
+TERMINAL WANT TIME (WEST or EAST Terminal: minutes from current time):	EAST:	120
+								
+HEADER:	A1				
+ENTRY TIME (from current time in minutes):	20
+ORIGIN NODE:	0				
+DESTINATION NODE:	12
+DIRECTION:	EASTBOUND				
+SPEED MULTIPLIER:	1				
+TRAIN LENGTH (miles):	2.1				
+TOB:	75				
+HAZMAT (IH: YES or NO):	NO				
+SA STATUS AT ORIGIN:	0				
+SCHEDULED ARRIVAL (NODE: minutes from current time):	6:	40	,	12:	80
+TERMINAL WANT TIME (WEST or EAST Terminal: minutes from current time):	EAST: 	145			
+					
+HEADER:	B1				
+ENTRY TIME (from current time in minutes):	0				
+ORIGIN NODE:	12				
+DESTINATION NODE:	0				
+DIRECTION:	WESTBOUND				
+SPEED MULTIPLIER:	0.85				
+TRAIN LENGTH (miles):	1				
+TOB:	75				
+HAZMAT (IH: YES or NO):	NO				
+SA STATUS AT ORIGIN:	-120				
+SCHEDULED ARRIVAL (NODE: minutes from current time):	6:	-50	,	0:	90
+TERMINAL WANT TIME (WEST or EAST Terminal: minutes from current time):	EAST: 	80
