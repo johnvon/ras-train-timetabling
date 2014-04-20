@@ -61,8 +61,28 @@ Data::Data(const string data_file_name) {
         tracks.push_back(make_shared<Track>(length, speeds, type_chr, TrackDirection::WESTBOUND, make_pair(extreme_e, extreme_w)));
     }
     
+    int global_train_id = 0;
     BOOST_FOREACH(const ptree::value_type& tr_child, pt.get_child("trains")) {
+        char tr_class = tr_child.second.get<char>("class");
+        int entry_time = tr_child.second.get<int>("entry_time");
+        std::shared_ptr<Junction> origin_junct = junction_by_id(tr_child.second.get<int>("origin_node"));
+        std::shared_ptr<Junction> destination_junct = junction_by_id(tr_child.second.get<int>("destination_node"));
+        float speed_multi = tr_child.second.get<float>("speed_multi");
+        float length = tr_child.second.get<float>("length");
+        float tob = tr_child.second.get<float>("tob");
+        bool hazmat = tr_child.second.get<bool>("hazmat");
+        int initial_delay = tr_child.second.get<int>("initial_delay");
+        int terminal_wt = tr_child.second.get<int>("terminal_wt");
         
+        Schedule schedule;
+        BOOST_FOREACH(const ptree::value_type& sc_child, tr_child.second.get_child("schedule")) {
+            std::shared_ptr<Junction> junct = junction_by_id(sc_child.second.get<int>("node"));
+            int time_in = sc_child.second.get<int>("time");
+            
+            schedule.push_back(make_pair(junct, time_in));
+        }
+        
+        trains.push_back(make_shared<Train>(global_train_id++, tr_class, entry_time, origin_junct, destination_junct, speed_multi, length, tob, hazmat, initial_delay, schedule, terminal_wt));
     }
 }
 
@@ -73,7 +93,12 @@ void Data::print() const {
     cout << "Speeds: " << speed_we << ", " << speed_we << ", " << speed_siding << ", " << speed_switch << ", " << speed_xover << endl;
     cout << "Tracks: ";
     for(const std::shared_ptr<Track>& t : tracks) {
-        cout << "[" << t->extremes.first->id << ", " << t->extremes.second->id << "] ";
+        cout << *t << " ";
+    }
+    cout << endl;
+    cout << "Trains: ";
+    for(const std::shared_ptr<Train>& t : trains) {
+        cout << *t << " ";
     }
     cout << endl;
 }
