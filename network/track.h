@@ -9,6 +9,8 @@ using std::make_shared;
 using std::vector;
 #include <string>
 using std::string;
+#include <iostream>
+using std::ostream;
 
 #include <network/junction.h>
 
@@ -30,5 +32,7 @@ public:
     // max_speeds: 0 => we, 1 => ew, 2 => siding, 3 => switch, 4 => xover
     Track(const float length, const vector<float> max_speeds, const char type_chr, const TrackDirection direction, const Extremes extremes);
 };
+
+ostream& operator<<(ostream& out, const Track& t);
 
 #endif

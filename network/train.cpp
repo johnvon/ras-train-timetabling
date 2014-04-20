@@ -9,6 +9,7 @@ Train::Train(const int id, const char pc, const int entry_time, const std::share
     precedence_class = static_cast<TrainPrecedenceType>(pc);
     
     if(schedule.empty()) {
+        adherence_class = TrainAdherenceType::NON_SCHEDULE_ADHERENCE;
     } else {
         adherence_class = TrainAdherenceType::SCHEDULE_ADHERENCE;
     }
@@ -19,6 +20,7 @@ Train::Train(const int id, const char pc, const int entry_time, const std::share
         direction = TrackDirection::EASTBOUND;
     }
 }
+
 void Train::check_valid() const {
     assert(origin->is_terminal);
     assert(destination->is_terminal);
@@ -32,6 +34,11 @@ void Train::check_valid() const {
     }
     
     assert(terminal_wt > entry_time);
+}
+
+ostream& operator<<(ostream& out, const Train& t) {
+    out << "[id: " << t.id << ", class: " << static_cast<char>(t.precedence_class) << ", dir: " << static_cast<char>(t.direction) << "]";
+    return out;
 }
 
 #endif

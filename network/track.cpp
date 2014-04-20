@@ -39,4 +39,9 @@ Track::Track(const float length, const vector<float> max_speeds, const char type
     }
 }
 
+ostream& operator<<(ostream& out, const Track& t) {
+    out << "[" << t.extremes.first->id << ", " << t.extremes.second->id << "]";
+    return out;
+}
+
 #endif
