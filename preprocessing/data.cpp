@@ -53,12 +53,12 @@ Data::Data(const string data_file_name) {
     BOOST_FOREACH(const ptree::value_type& seg_child, pt.get_child("segments")) {
         std::shared_ptr<Junction> extreme_w = junction_by_id(seg_child.second.get<int>("extreme_w"));
         std::shared_ptr<Junction> extreme_e = junction_by_id(seg_child.second.get<int>("extreme_e"));
-        string type_str = seg_child.second.get<string>("type");
+        char type_chr = seg_child.second.get<char>("type");
         float length = seg_child.second.get<float>("length");
         vector<float> speeds = {speed_we, speed_ew, speed_siding, speed_switch, speed_xover};
         
-        tracks.push_back(make_shared<Track>(length, speeds, type_str, TrackDirection::EASTBOUND, make_pair(extreme_w, extreme_e)));
-        tracks.push_back(make_shared<Track>(length, speeds, type_str, TrackDirection::WESTBOUND, make_pair(extreme_e, extreme_w)));
+        tracks.push_back(make_shared<Track>(length, speeds, type_chr, TrackDirection::EASTBOUND, make_pair(extreme_w, extreme_e)));
+        tracks.push_back(make_shared<Track>(length, speeds, type_chr, TrackDirection::WESTBOUND, make_pair(extreme_e, extreme_w)));
     }
     
     BOOST_FOREACH(const ptree::value_type& tr_child, pt.get_child("trains")) {

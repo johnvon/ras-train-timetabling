@@ -5,6 +5,20 @@
 
 #include <network/train.h>
 
+Train::Train(const int id, const char pc, const int entry_time, const std::shared_ptr<Junction> origin, const std::shared_ptr<Junction> destination, const float sm, const float length, const float tob, const bool hazmat, const int ide, const Schedule schedule, const int tw) : id(id), entry_time(entry_time), origin(origin), destination(destination), speed_multiplier(sm), length(length), tob(tob), hazmat(hazmat), initial_delay(ide), schedule(schedule), terminal_wt(tw) {
+    precedence_class = static_cast<TrainPrecedenceType>(pc);
+    
+    if(schedule.empty()) {
+    } else {
+        adherence_class = TrainAdherenceType::SCHEDULE_ADHERENCE;
+    }
+    
+    if(origin->terminal_type == TerminalType::EAST) {
+        direction = TrackDirection::WESTBOUND;
+    } else {
+        direction = TrackDirection::EASTBOUND;
+    }
+}
 void Train::check_valid() const {
     assert(origin->is_terminal);
     assert(destination->is_terminal);
