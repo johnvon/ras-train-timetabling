@@ -12,6 +12,7 @@ using std::unordered_map;
 typedef unordered_map<std::shared_ptr<Train>, std::shared_ptr<Graph>> GraphMap;
 
 class Problem {
+public:
     Data        data;
     GraphMap    graphs;
 };
