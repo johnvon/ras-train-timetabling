@@ -24,8 +24,11 @@ typedef graph_traits<BoostGraph>::edge_descriptor Edge;
 typedef vector<Edge> Path;
 
 class Graph {
+public:
     BoostGraph              graph;
     std::shared_ptr<Train>  train;
+    
+    Graph(const BoostGraph graph, std::shared_ptr<Train> train) : graph(graph), train(train) {}
 };
 
 #endif
