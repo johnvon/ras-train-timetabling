@@ -23,7 +23,11 @@ Data::Data(const string data_file_name) {
     
     num_trains = pt.get<int>("trains_number");
     num_junctions = pt.get<int>("nodes_number");
-    num_times = 60 * 24; // 1 day, 1 time interval per minute
+    if(DEV) {
+        num_times = 60 * 4; // Smaller graph to speed up execution during development
+    } else {
+        num_times = 60 * 24; // 1 day, 1 time interval per minute
+    }
     
     for(int i = 0; i < num_junctions; ++i) {
         bool junction_added = false;
@@ -83,6 +87,15 @@ Data::Data(const string data_file_name) {
         }
         
         trains.push_back(make_shared<Train>(global_train_id++, tr_class, entry_time, origin_junct, destination_junct, speed_multi, length, tob, hazmat, initial_delay, schedule, terminal_wt));
+    }
+    
+    BOOST_FOREACH(const ptree::value_type& mow_child, pt.get_child("mow")) {
+        std::shared_ptr<Junction> extreme1 = junction_by_id(mow_child.second.get<int>("extreme1"));
+        std::shared_ptr<Junction> extreme2 = junction_by_id(mow_child.second.get<int>("extreme2"));
+        int start_time = mow_child.second.get<int>("start_time");
+        int end_time = mow_child.second.get<int>("end_time");
+        
+        mow.push_back(make_tuple(extreme1, extreme2, start_time, end_time));
     }
 }
 

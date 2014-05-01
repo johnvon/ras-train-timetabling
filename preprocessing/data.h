@@ -6,10 +6,13 @@
 using std::vector;
 #include <string>
 using std::string;
+#include <tuple>
 
 #include <network/train.h>
 #include <network/junction.h>
 #include <network/track.h>
+
+typedef std::tuple<std::shared_ptr<Junction>, std::shared_ptr<Junction>, int, int> Mow;
 
 class Data {
 public:
@@ -25,6 +28,8 @@ public:
     float                               speed_siding;
     float                               speed_switch;
     float                               speed_xover;
+    
+    vector<Mow>                         mow;
     
     Data(const string data_file_name = "data/problem_data.json");
     
