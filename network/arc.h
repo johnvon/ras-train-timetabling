@@ -9,6 +9,8 @@ class Arc {
 public:
     int                      id;
     std::shared_ptr<Track>   track;
+    
+    Arc(const int id, std::shared_ptr<Track> track) : id(id), track(track) {}
 };
 
 #endif
