@@ -29,6 +29,7 @@ public:
     std::shared_ptr<Train>  train;
     
     Graph(const BoostGraph graph, std::shared_ptr<Train> train) : graph(graph), train(train) {}
+    pair<bool, Vertex> get_vertex(const std::shared_ptr<Junction> j, const int t);
 };
 
 #endif
