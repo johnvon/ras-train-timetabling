@@ -53,5 +53,8 @@
                 {"node": 0, "time": 90}
             ]
         }
+    ],
+    "mow": [
+      {"extreme1": 11, "extreme2": 12, "start_time": 0, "end_time": 20}
     ]
 }
