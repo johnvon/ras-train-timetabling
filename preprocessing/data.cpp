@@ -24,9 +24,9 @@ Data::Data(const string data_file_name) {
     num_trains = pt.get<int>("trains_number");
     num_junctions = pt.get<int>("nodes_number");
     if(DEV) {
-        num_times = 60 * 4; // Smaller graph to speed up execution during development
+        num_times = 150; // Smaller graph to speed up execution during development
     } else {
-        num_times = 60 * 24; // 1 day, 1 time interval per minute
+        num_times = 60 * 12; // 1 day, 1 time interval per minute
     }
     
     for(int i = 0; i < num_junctions; ++i) {
