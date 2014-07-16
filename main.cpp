@@ -1,25 +1,32 @@
 #ifndef MAIN_CPP
 #define MAIN_CPP
 
-#include <vector>
-using std::vector;
-#include <memory>
-
-#include <network/graph.h>
-#include <network/train.h>
+#include <graph/graph.h>
 #include <preprocessing/data.h>
-#include <preprocessing/graph_generator.h>
+#include <solver/mip_solver.h>
 
-int main() {
-    Data data("data/toy.json");
-    data.print();
-    
-    vector<std::shared_ptr<Graph>> graphs;
-    for(const std::shared_ptr<Train> t : data.trains) {
-        graphs.push_back(GraphGenerator::create_graph(data, t));
+#include <iostream>
+#include <memory>
+#include <vector>
+
+int main(int argc, char* argv[]) {
+    if(argc != 2) {
+        std::cout << "Wrong number of arguments" << std::endl;
+        return -1;
     }
     
-    return 0; 
+    std::shared_ptr<const Data> d {std::make_shared<const Data>(argv[1])};
+    std::vector<std::shared_ptr<const Graph>> graphs;
+    
+    for(const Train& tr : d->trains) {
+        graphs.push_back(std::make_shared<const Graph>(d, tr));
+    }
+    
+    MipSolver msolv {d, graphs};
+    
+    msolv.solve();
+    
+    return 0;
 }
 
 #endif

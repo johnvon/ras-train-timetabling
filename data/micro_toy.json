@@ -1,0 +1,55 @@
+{
+    "name":             "Toy micro-instance",
+    
+    "speed_ew":         10,
+    "speed_we":         10,
+    "speed_siding":     5,
+    "speed_switch":     5,
+    "speed_xover":      5,
+    
+    "time_intervals":       3,
+    "want_time_tw_start":   1,
+    "want_time_tw_end":     1,
+    "schedule_tw_end":      1,
+    "headway":              0,
+    
+    "general_delay_price": {
+        "A": 10.0,
+        "B": 8.0,
+        "C": 6.0,
+        "D": 5.0,
+        "E": 2.0,
+        "F": 1.0
+    },
+    "terminal_delay_price": 1.0,
+    "schedule_delay_price": 3.0,
+    "unpreferred_price": 1.0,
+    
+    "segments_number":  3,
+    "segments": [
+        {"extreme_1": 0, "extreme_2": 1, "type": "0", "length": 10, "eastbound": true, "westbound": true},
+        {"extreme_1": 1, "extreme_2": 2, "type": "0", "length": 10, "eastbound": true, "westbound": true},
+        {"extreme_1": 2, "extreme_2": 3, "type": "0", "length": 10, "eastbound": true, "westbound": true}
+    ],
+    
+    "trains_number":    1,
+    "trains": [
+        {
+            "class": "C",
+            "schedule_adherence": false,
+            "entry_time": 1,
+            "origin_node": 0,
+            "destination_node": 3,
+            "eastbound": true,
+            "westbound": false,
+            "speed_multi": 1,
+            "length": 1,
+            "tob": 75,
+            "hazmat": false,
+            "terminal_wt": 30,
+            "schedule": []
+        }
+    ],
+    
+    "mow": []
+}

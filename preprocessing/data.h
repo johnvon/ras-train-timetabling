@@ -1,42 +1,31 @@
 #ifndef DATA_H
 #define DATA_H
 
-#include <memory>
-#include <vector>
-using std::vector;
-#include <string>
-using std::string;
-#include <tuple>
-
+#include <network/segment.h>
 #include <network/train.h>
-#include <network/junction.h>
-#include <network/track.h>
+#include <network/mow.h>
 
-typedef std::tuple<std::shared_ptr<Junction>, std::shared_ptr<Junction>, int, int> Mow;
+#include <memory>
+#include <string>
+#include <vector>
 
-class Data {
-public:
-    int                                 num_trains;
-    int                                 num_junctions;
-    int                                 num_times;
-    vector<std::shared_ptr<Train>>      trains;
-    vector<std::shared_ptr<Junction>>   junctions;
-    vector<std::shared_ptr<Track>>      tracks;
+struct Data {
+    std::string file_name;
+    std::string instance_name;
+    double speed_ew, speed_we, speed_siding, speed_switch, speed_xover;
+    int time_intervals, want_time_tw_start, want_time_tw_end, schedule_tw_end, headway;
+    std::unordered_map<char, double> general_delay_price;
+    double terminal_delay_price, schedule_delay_price, unpreferred_price;
+    int segments_number, trains_number;
+    std::vector<std::shared_ptr<const Segment>> segments;
+    std::vector<Train> trains;
+    std::vector<Mow> mow;
     
-    float                               speed_ew;
-    float                               speed_we;
-    float                               speed_siding;
-    float                               speed_switch;
-    float                               speed_xover;
+    Data(const std::string file_name);
     
-    vector<Mow>                         mow;
-    
-    Data(const string data_file_name = "data/problem_data.json");
-    
-    void print() const;
-    
-private:
-    std::shared_ptr<Junction> junction_by_id(const int id) const;
+    void parse();
+    void print_stats() const;
+    bool is_main(std::shared_ptr<const Segment> m, std::shared_ptr<const Segment> s) const;
 };
 
 #endif
