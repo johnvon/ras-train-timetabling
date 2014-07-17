@@ -1,7 +1,11 @@
 #include <graph/graph.h>
 
+#include <boost/graph/dijkstra_shortest_paths.hpp>
+#include <boost/property_map/property_map.hpp>
+
 #include <algorithm>
 #include <iostream>
+#include <limits>
 
 Graph::Graph(const std::shared_ptr<const Data> d, const Train tr) : d{d}, tr{tr} {
     Node sigma {nullptr, -1, true, false};
@@ -13,6 +17,8 @@ Graph::Graph(const std::shared_ptr<const Data> d, const Train tr) : d{d}, tr{tr}
     g[source_vertex] = sigma;
     g[sink_vertex] = tau;
     
+    std::unordered_map<std::shared_ptr<const Segment>, std::pair<int, int>> times = calculate_times();
+    
     for(auto s : d->segments) {
         if(tr.hazmat && (s->type == 'S' || s->type == 'T')) {
             continue;
@@ -22,7 +28,11 @@ Graph::Graph(const std::shared_ptr<const Data> d, const Train tr) : d{d}, tr{tr}
             if(mow(s,t)) {
                 continue;
             }
-            
+                        
+            if(t < times.at(s).first || t > times.at(s).second) {
+                continue;
+            }
+                        
             Node n {s, t};
             vertex_t v {add_vertex(g)};
             g[v] = n;
@@ -96,7 +106,7 @@ Graph::Graph(const std::shared_ptr<const Data> d, const Train tr) : d{d}, tr{tr}
             }
         }
     }
-    
+        
     /****************** 5: cleanup ******************/
     
     bool clean = false;
@@ -159,3 +169,157 @@ std::pair<bool, vertex_t> Graph::tau() const {
     }
     return std::make_pair(false, vertex_t());
 }
+
+std::unordered_map<std::shared_ptr<const Segment>, std::pair<int, int>> Graph::calculate_times() const {
+    std::unordered_map<std::shared_ptr<const Segment>, std::pair<int, int>> times;
+    double speed;
+    
+    if(tr.westbound) {
+        speed = d->speed_ew;
+    } else {
+        speed = d->speed_we;
+    }
+    
+    speed *= tr.speed_multi;
+    
+    for(auto s : d->segments) {
+        int time_from_w {static_cast<int>(ceil(s->min_distance_from_w / speed))};
+        int time_from_e {static_cast<int>(ceil(s->min_distance_from_e / speed))};
+        
+        if(tr.westbound) {
+            times.emplace(s, std::make_pair(time_from_e, d->time_intervals - time_from_w));
+        } else {
+            times.emplace(s, std::make_pair(time_from_w, d->time_intervals - time_from_e));
+        }
+    }
+    
+    return times;
+}
+
+// std::unordered_map<std::shared_ptr<const Segment>, std::pair<int, int>> Graph::calculate_times() const {
+//     typedef adjacency_list<vecS, vecS, undirectedS, property<vertex_index_t, int>, property<edge_weight_t, double>> tmp_graph_t;
+//     typedef graph_traits<tmp_graph_t>::vertex_descriptor tmp_vertex_t;
+//     typedef graph_traits<tmp_graph_t>::edge_descriptor tmp_edge_t;
+//     typedef graph_traits<tmp_graph_t>::vertex_iterator tmp_vi_t;
+//
+//     tmp_graph_t tg;
+//     tmp_vertex_t source_vertex, sink_vertex;
+//     std::vector<int> inserted_junctions;
+//
+//     for(auto s : d->segments) {
+//         tmp_vertex_t v1, v2;
+//
+//         if(std::find(inserted_junctions.begin(), inserted_junctions.end(), s->extreme_1) != inserted_junctions.end()) {
+//             inserted_junctions.push_back(s->extreme_1);
+//             v1 = add_vertex(tg);
+//             put(vertex_index, tg, v1, s->extreme_1);
+//
+//             if(s->extreme_1 == tr.origin_node) {
+//                 source_vertex = v1;
+//             }
+//
+//             if(s->extreme_1 == tr.destination_node) {
+//                 sink_vertex = v1;
+//             }
+//         } else {
+//             tmp_vi_t vi, vi_end;
+//             for(std::tie(vi, vi_end) = vertices(tg); vi != vi_end; ++vi) {
+//                 if(get(vertex_index, tg, *vi) == s->extreme_1) {
+//                     v1 = *vi;
+//                     break;
+//                 }
+//             }
+//         }
+//
+//         if(std::find(inserted_junctions.begin(), inserted_junctions.end(), s->extreme_2) != inserted_junctions.end()) {
+//             inserted_junctions.push_back(s->extreme_2);
+//             v2 = add_vertex(tg);
+//             put(vertex_index, tg, v2, s->extreme_2);
+//
+//             if(s->extreme_2 == tr.origin_node) {
+//                 source_vertex = v2;
+//             }
+//
+//             if(s->extreme_2 == tr.destination_node) {
+//                 sink_vertex = v2;
+//             }
+//         } else {
+//             tmp_vi_t vi, vi_end;
+//             for(std::tie(vi, vi_end) = vertices(tg); vi != vi_end; ++vi) {
+//                 if(get(vertex_index, tg, *vi) == s->extreme_2) {
+//                     v2 = *vi;
+//                     break;
+//                 }
+//             }
+//         }
+//
+//         double speed {0};
+//
+//         if(s->type == '0') {
+//             if(tr.westbound) {
+//                 speed = d->speed_ew;
+//             } else {
+//                 speed = d->speed_we;
+//             }
+//         } else if(s->type == '1') {
+//             speed = d->speed_ew;
+//         } else if(s->type == '2') {
+//             speed = d->speed_we;
+//         } else if(s->type == 'S') {
+//             speed = d->speed_siding;
+//         } else if(s->type == 'T') {
+//             speed = d->speed_switch;
+//         } else if(s->type == 'X') {
+//             speed = d->speed_xover;
+//         } else {
+//             throw std::runtime_error("Unrecognised segment type!");
+//         }
+//
+//         speed *= tr.speed_multi;
+//         double min_time {ceil(s->length / speed)};
+//
+//         tmp_edge_t e = add_edge(v1, v2, tg).first;
+//         put(edge_weight, tg, e, min_time);
+//     }
+//
+//     std::vector<tmp_vertex_t> from_source_predecessor(num_vertices(tg));
+//     std::vector<tmp_vertex_t> to_sink_predecessor(num_vertices(tg));
+//     std::vector<int> from_source_distance(num_vertices(tg));
+//     std::vector<int> to_sink_distance(num_vertices(tg));
+//
+//     dijkstra_shortest_paths(tg, source_vertex,
+//         predecessor_map(
+//             make_iterator_property_map(
+//                 from_source_predecessor.begin(),
+//                 get(vertex_index, tg)
+//             )
+//         ).
+//         distance_map(
+//             make_iterator_property_map(
+//                 from_source_distance.begin(),
+//                 get(vertex_index,tg)
+//             )
+//         )
+//     );
+//
+//     // ...
+//
+//     dijkstra_shortest_paths(tg, sink_vertex,
+//         predecessor_map(
+//             make_iterator_property_map(
+//                 from_source_predecessor.begin(),
+//                 get(vertex_index, tg)
+//             )
+//         ).
+//         distance_map(
+//             make_iterator_property_map(
+//                 from_source_distance.begin(),
+//                 get(vertex_index,tg)
+//             )
+//         )
+//     );
+//
+//     // ...
+//
+//     return std::unordered_map<std::shared_ptr<const Segment>, std::pair<int, int>>();
+// }

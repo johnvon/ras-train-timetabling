@@ -1,11 +1,11 @@
 {
     "name":             "Toy mini-instance",
     
-    "speed_ew":         10,
-    "speed_we":         10,
-    "speed_siding":     7,
-    "speed_switch":     7,
-    "speed_xover":      7,
+    "speed_ew":         5,
+    "speed_we":         5,
+    "speed_siding":     3,
+    "speed_switch":     3,
+    "speed_xover":      3,
     
     "time_intervals":       30,
     "want_time_tw_start":   4,

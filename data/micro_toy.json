@@ -46,7 +46,7 @@
             "length": 1,
             "tob": 75,
             "hazmat": false,
-            "terminal_wt": 30,
+            "terminal_wt": 3,
             "schedule": []
         }
     ],

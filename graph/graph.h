@@ -27,6 +27,8 @@ class Graph {
     std::pair<bool, vertex_t> sigma() const;
     std::pair<bool, vertex_t> tau() const;
     
+    std::unordered_map<std::shared_ptr<const Segment>, std::pair<int, int>> calculate_times() const;
+    
 public:
     graph_t g;
     const Train tr;

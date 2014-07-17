@@ -26,9 +26,9 @@ for(int i = 0; i < nt; i++) {
             throw std::runtime_error("Unrecognised segment type!");
         }
         
-        speed *= d->trains[i].speed_multi;
-        long m_s_i {static_cast<long>(ceil(seg->length / speed))};
-        
+        speed *= d->trains[i].speed_multi;        
+        double m_s_i {ceil(seg->length / speed)};
+                
         // ********** Obj Function **********
         double obj_coeff {0};
         obj_coeff = -1 * c_d_i * m_s_i;
@@ -105,7 +105,19 @@ for(int i = 0; i < nt; i++) {
                 int coeff {0};
                 
                 if(i == ii && s == ss) {
-                    coeff = -ti;
+                    int num_nodes_with_segment_ss {0};
+                    
+                    vi_t vi, vi_end;
+                    for(std::tie(vi, vi_end) = vertices(graphs[ii]->g); vi != vi_end; ++vi) {
+                        const Node& n = graphs[ii]->g[*vi];
+                        if(n.s != nullptr && n.s->id == d->segments[ss]->id) {
+                            num_nodes_with_segment_ss++;
+                        }
+                    }
+                    
+                    // In the model this should be -ti, but we can actually strengthen this constraint
+                    // Since not all nodes (s,t) exist for all s and all t, after the graph cleanup
+                    coeff = -num_nodes_with_segment_ss;
                 }
                 
                 col += eq_set_z[num_row++](coeff);
@@ -162,7 +174,7 @@ for(int i = 0; i < nt; i++) {
         num_row = 0;
         for(int ii = 0; ii < nt; ii++) {
             for(int ss = 0; ss < ns; ss++) {
-                for(int tt = 0; tt < ti; tt++) {
+                for(int tt = 1; tt <= ti; tt++) {
                     if(graphs[ii]->vertex_for(d->segments[ss], tt).first) {
                         int coeff {0};
                         col += eq_headway[num_row++](coeff);
@@ -176,7 +188,7 @@ for(int i = 0; i < nt; i++) {
         for(int ii = 0; ii < nt; ii++) {
             for(int ss = 0; ss < ns; ss++) {
                 if(d->segments[ss]->type == 'S') {
-                    for(int tt = 0; tt < ti; tt++) {
+                    for(int tt = 1; tt <= ti; tt++) {
                         if(graphs[ii]->vertex_for(d->segments[ss], tt).first) {
                             int coeff {0};
                             col += eq_can_take_siding[num_row++](coeff);
@@ -192,7 +204,7 @@ for(int i = 0; i < nt; i++) {
             if(d->trains[ii].heavy) {
                 for(int ss = 0; ss < ns; ss++) {
                     if(d->segments[ss]->type == 'S') {
-                        for(int tt = 0; tt < ti; tt++) {
+                        for(int tt = 1; tt <= ti; tt++) {
                             if(graphs[ii]->vertex_for(d->segments[ss], tt).first) {
                                 int coeff {0};
                                 col += eq_heavy_siding[num_row++](coeff);

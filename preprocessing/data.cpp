@@ -43,12 +43,14 @@ void Data::parse() {
     BOOST_FOREACH(const ptree::value_type& segment_child, pt.get_child("segments")) {
         int extreme_1 {segment_child.second.get<int>("extreme_1")};
         int extreme_2 {segment_child.second.get<int>("extreme_2")};
+        double min_distance_from_w {segment_child.second.get<double>("min_distance_from_w")};
+        double min_distance_from_e {segment_child.second.get<double>("min_distance_from_e")};
         char type {segment_child.second.get<char>("type")};
         double length {segment_child.second.get<double>("length")};
         bool eastbound {segment_child.second.get<bool>("eastbound")};
         bool westbound {segment_child.second.get<bool>("westbound")};
         
-        Segment s {segment_id++, extreme_1, extreme_2, type, length, eastbound, westbound};
+        Segment s {segment_id++, extreme_1, extreme_2, min_distance_from_w, min_distance_from_e, type, length, eastbound, westbound};
         segments.push_back(std::make_shared<const Segment>(s));
     }
     

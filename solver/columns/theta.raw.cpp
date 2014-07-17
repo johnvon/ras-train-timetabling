@@ -124,7 +124,7 @@ for(int i = 0; i < nt; i++) {
         num_row = 0;
         for(int ii = 0; ii < nt; ii++) {
             for(int ss = 0; ss < ns; ss++) {
-                for(int tt = 0; tt < ti; tt++) {
+                for(int tt = 1; tt <= ti; tt++) {
                     if(graphs[ii]->vertex_for(d->segments[ss], tt).first) {
                         int coeff {0};
                         col += eq_headway[num_row++](coeff);
@@ -138,7 +138,7 @@ for(int i = 0; i < nt; i++) {
         for(int ii = 0; ii < nt; ii++) {
             for(int ss = 0; ss < ns; ss++) {
                 if(d->segments[ss]->type == 'S') {
-                    for(int tt = 0; tt < ti; tt++) {
+                    for(int tt = 1; tt <= ti; tt++) {
                         if(graphs[ii]->vertex_for(d->segments[ss], tt).first) {
                             int coeff {0};
                             col += eq_can_take_siding[num_row++](coeff);
@@ -154,7 +154,7 @@ for(int i = 0; i < nt; i++) {
             if(d->trains[ii].heavy) {
                 for(int ss = 0; ss < ns; ss++) {
                     if(d->segments[ss]->type == 'S') {
-                        for(int tt = 0; tt < ti; tt++) {
+                        for(int tt = 1; tt <= ti; tt++) {
                             if(graphs[ii]->vertex_for(d->segments[ss], tt).first) {
                                 int coeff {0};
                                 col += eq_heavy_siding[num_row++](coeff);
@@ -165,7 +165,22 @@ for(int i = 0; i < nt; i++) {
             }
         }
         
-        IloNumVar v(col, 0.0, nt, IloNumVar::Int, (
+        // We strengthen the bound on theta by calculating how long is the longest
+        // sequence (s,t) (s,t+1) ... (s,t+N) such that all these nodes exist
+        // N will then be the upper bound for theta[i][s]
+        
+        int longest {0};
+        int current {0};
+        for(int X_t = 1; X_t <= ti; X_t++) {
+            if(graphs[i]->vertex_for(d->segments[s], X_t).first) {
+                current++;
+                if(current > longest) { longest = current; }
+            } else {
+                current = 0;
+            }
+        }
+        
+        IloNumVar v(col, 0.0, longest, IloNumVar::Int, (
             "theta_train_" + std::to_string(i) + "_segment_" + std::to_string(d->segments[s]->id)
         ).c_str());
         var_theta.add(v);

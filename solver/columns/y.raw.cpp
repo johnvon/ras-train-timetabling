@@ -133,7 +133,7 @@ for(int i = 0; i < nt; i++) {
         num_row = 0;
         for(int ii = 0; ii < nt; ii++) {
             for(int ss = 0; ss < ns; ss++) {
-                for(int tt = 0; tt < ti; tt++) {
+                for(int tt = 1; tt <= ti; tt++) {
                     if(graphs[ii]->vertex_for(d->segments[ss], tt).first) {
                         int coeff {0};
                         int h {d->headway};
@@ -159,7 +159,7 @@ for(int i = 0; i < nt; i++) {
         for(int ii = 0; ii < nt; ii++) {
             for(int ss = 0; ss < ns; ss++) {
                 if(d->segments[ss]->type == 'S') {
-                    for(int tt = 0; tt < ti; tt++) {
+                    for(int tt = 1; tt <= ti; tt++) {
                         if(graphs[ii]->vertex_for(d->segments[ss], tt).first) {
                             int coeff {0};
                             int h {d->headway};
@@ -185,7 +185,7 @@ for(int i = 0; i < nt; i++) {
             if(d->trains[ii].heavy) {
                 for(int ss = 0; ss < ns; ss++) {
                     if(d->segments[ss]->type == 'S') {
-                        for(int tt = 0; tt < ti; tt++) {
+                        for(int tt = 1; tt <= ti; tt++) {
                             if(graphs[ii]->vertex_for(d->segments[ss], tt).first) {
                                 int coeff {0};
                                 

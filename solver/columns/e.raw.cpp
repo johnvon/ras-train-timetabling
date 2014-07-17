@@ -128,7 +128,7 @@ for(int i = 0; i < nt; i++) {
             num_row = 0;
             for(int ii = 0; ii < nt; ii++) {
                 for(int ss = 0; ss < ns; ss++) {
-                    for(int tt = 0; tt < ti; tt++) {
+                    for(int tt = 1; tt <= ti; tt++) {
                         if(graphs[ii]->vertex_for(d->segments[ss], tt).first) {
                             int coeff {0};
                             col += eq_headway[num_row++](coeff);
@@ -142,7 +142,7 @@ for(int i = 0; i < nt; i++) {
             for(int ii = 0; ii < nt; ii++) {
                 for(int ss = 0; ss < ns; ss++) {
                     if(d->segments[ss]->type == 'S') {
-                        for(int tt = 0; tt < ti; tt++) {
+                        for(int tt = 1; tt <= ti; tt++) {
                             if(graphs[ii]->vertex_for(d->segments[ss], tt).first) {
                                 int coeff {0};
                                 col += eq_can_take_siding[num_row++](coeff);
@@ -158,7 +158,7 @@ for(int i = 0; i < nt; i++) {
                 if(d->trains[ii].heavy) {
                     for(int ss = 0; ss < ns; ss++) {
                         if(d->segments[ss]->type == 'S') {
-                            for(int tt = 0; tt < ti; tt++) {
+                            for(int tt = 1; tt <= ti; tt++) {
                                 if(graphs[ii]->vertex_for(d->segments[ss], tt).first) {
                                     int coeff {0};
                                     col += eq_heavy_siding[num_row++](coeff);
@@ -169,8 +169,11 @@ for(int i = 0; i < nt; i++) {
                 }
             }
         
-            IloNumVar v(col, 0.0, nt, IloNumVar::Int, (
-                "_e_train_" + std::to_string(i) + "_segment_" + std::to_string(segs[s])
+            // We strengthen the bound on e by calculating the maximum possible delay
+            int max_delay {std::max(times[s], ti - times[s])};
+            
+            IloNumVar v(col, 0.0, max_delay, IloNumVar::Int, (
+                "X_e_train_" + std::to_string(i) + "_segment_" + std::to_string(segs[s])
             ).c_str());
             var_e.add(v);
         }
