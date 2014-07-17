@@ -17,3 +17,5 @@ main
 .DS_Store
 
 Makefile
+ras
+model.lp
