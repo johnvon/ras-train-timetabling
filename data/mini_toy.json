@@ -7,7 +7,7 @@
     "speed_switch":     3,
     "speed_xover":      3,
     
-    "time_intervals":       30,
+    "time_intervals":       40,
     "want_time_tw_start":   4,
     "want_time_tw_end":     8,
     "schedule_tw_end":      8,
@@ -27,13 +27,13 @@
     
     "segments_number":  7,
     "segments": [
-        {"extreme_1": 0, "extreme_2": 1, "type": "0", "length": 10, "eastbound": true, "westbound": true},
-        {"extreme_1": 1, "extreme_2": 2, "type": "T", "length": 1, "eastbound": true, "westbound": true},
-        {"extreme_1": 1, "extreme_2": 3, "type": "0", "length": 2, "eastbound": true, "westbound": true},
-        {"extreme_1": 2, "extreme_2": 4, "type": "S", "length": 4, "eastbound": true, "westbound": true},
-        {"extreme_1": 3, "extreme_2": 5, "type": "0", "length": 2, "eastbound": true, "westbound": true},
-        {"extreme_1": 4, "extreme_2": 5, "type": "T", "length": 1, "eastbound": true, "westbound": true},
-        {"extreme_1": 5, "extreme_2": 6, "type": "0", "length": 20, "eastbound": true, "westbound": true}
+        {"extreme_1": 0, "extreme_2": 1, "type": "0", "length": 10, "eastbound": true, "westbound": true, "min_distance_from_w": 0, "min_distance_from_e": 26},
+        {"extreme_1": 1, "extreme_2": 2, "type": "T", "length": 1, "eastbound": true, "westbound": true, "min_distance_from_w": 10, "min_distance_from_e": 25},
+        {"extreme_1": 1, "extreme_2": 3, "type": "0", "length": 2, "eastbound": true, "westbound": true, "min_distance_from_w": 10, "min_distance_from_e": 22},
+        {"extreme_1": 2, "extreme_2": 4, "type": "S", "length": 4, "eastbound": true, "westbound": true, "min_distance_from_w": 11, "min_distance_from_e": 21},
+        {"extreme_1": 3, "extreme_2": 5, "type": "0", "length": 2, "eastbound": true, "westbound": true, "min_distance_from_w": 12, "min_distance_from_e": 20},
+        {"extreme_1": 4, "extreme_2": 5, "type": "T", "length": 1, "eastbound": true, "westbound": true, "min_distance_from_w": 15, "min_distance_from_e": 20},
+        {"extreme_1": 5, "extreme_2": 6, "type": "0", "length": 20, "eastbound": true, "westbound": true, "min_distance_from_w": 14, "min_distance_from_e": 0}
     ],
     
     "trains_number":    2,
