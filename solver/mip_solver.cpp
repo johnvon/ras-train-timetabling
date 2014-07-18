@@ -88,6 +88,7 @@ void MipSolver::solve() const {
     std::cout << time_span.count() << " seconds" << std::endl;
     
     IloCplex cplex(model);
+    cplex.extract(model);
     
     std::cout << "Writing model to file... ";
     t_start = high_resolution_clock::now();
