@@ -79,6 +79,7 @@ void Data::parse() {
             int node {schedule_child.second.get<int>("node")};
             int ti {schedule_child.second.get<int>("time")};
             schedule.emplace(node, ti);
+            schedule.emplace(segment_id_for_node(node, westbound), ti);
         }
         
         Train t {train_id++, cl, schedule_adherence, entry_time, origin_node, destination_node, eastbound, westbound, speed_multi, length, tob, hazmat, terminal_wt, schedule};
@@ -128,4 +129,12 @@ bool Data::is_main(std::shared_ptr<const Segment> m, std::shared_ptr<const Segme
     }
     
     return false;
+
+int Data::segment_id_for_node(int node_number, bool westbound_train) const {
+    for(auto segment : segments) {
+        if((westbound_train && segment->extreme_1 == node_number) || (!westbound_train && segment->extreme_2 == node_number)) {
+            return segment->id;
+        }
+    }
+    throw std::runtime_error("Couldn't find a segment for a SA node to be visited through!");
 }
