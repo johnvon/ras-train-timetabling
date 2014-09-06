@@ -115,7 +115,7 @@ bool Data::is_main(std::shared_ptr<const Segment> m, std::shared_ptr<const Segme
     std::vector<std::shared_ptr<const Segment>> switches;
     
     for(auto ss : segments) {
-        if(ss->type == 'T' && (ss->extreme_1 == s->extreme_1 || ss->extreme_2 == s->extreme_1 || ss->extreme_1 == s->extreme_2 || ss->extreme_2 == s->extreme_2)) {
+        if(ss->type == 'T' && (ss->extreme_1 == s->extreme_2 || ss->extreme_2 == s->extreme_1)) {
             switches.push_back(ss);
         }
     }
@@ -123,12 +123,13 @@ bool Data::is_main(std::shared_ptr<const Segment> m, std::shared_ptr<const Segme
     if(switches.size() != 2) { throw std::runtime_error("Found a siding that doesn't have two switches!"); }
     
     for(auto sw : switches) {
-        if(sw->extreme_1 == m->extreme_1 || sw->extreme_2 == m->extreme_1 || sw->extreme_1 == m->extreme_2 || sw->extreme_2 == m->extreme_2) {
+        if(sw->extreme_1 == m->extreme_1 || sw->extreme_2 == m->extreme_2) {
             return true;
         }
     }
     
     return false;
+}
 
 int Data::segment_id_for_node(int node_number, bool westbound_train) const {
     for(auto segment : segments) {
