@@ -16,6 +16,9 @@ int main(int argc, char* argv[]) {
     }
     
     std::shared_ptr<const Data> d {std::make_shared<const Data>(argv[1])};
+    
+    d->print_stats();
+    
     std::vector<std::shared_ptr<const Graph>> graphs;
     
     for(const Train& tr : d->trains) {
