@@ -78,7 +78,6 @@ void Data::parse() {
         BOOST_FOREACH(const ptree::value_type& schedule_child, train_child.second.get_child("schedule")) {
             int node {schedule_child.second.get<int>("node")};
             int ti {schedule_child.second.get<int>("time")};
-            schedule.emplace(node, ti);
             schedule.emplace(segment_id_for_node(node, westbound), ti);
         }
         
@@ -98,13 +97,54 @@ void Data::parse() {
 }
 
 void Data::print_stats() const {
-    std::cout << "Instance: ``" << instance_name << "''" << std::endl;
+    std::cout << "Instance: ``" << instance_name << "''" << std::endl << std::endl;
+    
+    std::cout << "****** GENERAL DATA ******" << std::endl << std::endl;
     std::cout << "Segments: " << segments_number << ", trains: " << trains_number << ", time intervals: " << time_intervals << std::endl;
-    std::cout << "Speeds. Ew: " << speed_ew << ", we: " << speed_we << ", siding: " << speed_siding << ", switch: " << speed_switch << ", xover: " << speed_xover << std::endl;
-    std::cout << "Prices. Terminal: " << terminal_delay_price << ", schedule: " << schedule_delay_price << ", Unpreferred: " << unpreferred_price << std::endl;
+    std::cout << "Speeds. Ew: " << speed_ew << ", we: " << speed_we << ", siding: " << speed_siding << ", switch: " << speed_switch << ", xover: " << speed_xover << std::endl << std::endl;
+    
+    std::cout << "****** COSTS ******" << std::endl << std::endl;
+    std::cout << "Prices. Terminal: " << terminal_delay_price << ", schedule: " << schedule_delay_price << ", unpreferred: " << unpreferred_price << std::endl;
     std::cout << "General delay price. ";
     for(char cl = 'A'; cl <= 'F'; cl++) { std::cout << cl << ": " << general_delay_price.at(cl) << ", "; }
-    std::cout << std::endl;
+    std::cout << std::endl << std::endl;
+    
+    std::cout << "****** TOPOLOGY ******" << std::endl << std::endl;
+    std::cout << "Segments: " << std::endl;
+    for(auto s : segments) {
+        std::cout << "\tSegment #" << s->id << " (" << s->type << "); length: " << s->length << "; extremes: " << s->extreme_1 << " and " << s->extreme_2 << "; min dist: " << s->min_distance_from_w << " from W and " << s->min_distance_from_e << " from E" << std::endl;
+        if(s->type == 'S') {
+            for(auto m : segments) {
+                if(is_main(m, s)) {
+                    std::cout << "\t\tThe corresponding main segment is: " << m->id << " from " << m->extreme_1 << " to " << m->extreme_2 << std::endl;
+                }
+            }
+        }
+    }
+    std::cout << "Segments from nodes: " << std::endl;
+    int node_number {0};
+    bool done_w {false};
+    bool done_e {false};
+    
+    while(!done_w || !done_e) {
+        try {
+            done_w = false;
+            int segw = segment_id_for_node(node_number, true);
+            std::cout << "\tNode " << node_number << "; segment arriving from e: " << segw << std::endl;
+        } catch(...) {
+            done_w = true;
+        }
+        
+        try {
+            done_e = false;
+            int sege = segment_id_for_node(node_number, false);
+            std::cout << "\tNode " << node_number << "; segment arriving from w: " << sege << std::endl;
+        } catch(...) {
+            done_e = true;
+        }
+        
+        node_number++;
+    }
 }
 
 bool Data::is_main(std::shared_ptr<const Segment> m, std::shared_ptr<const Segment> s) const {
