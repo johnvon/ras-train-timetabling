@@ -23,13 +23,13 @@
     },
     "terminal_delay_price": 1.0,
     "schedule_delay_price": 3.0,
-    "unpreferred_price": 1.0,
+    "unpreferred_price":    1.0,
     
     "segments_number":  3,
     "segments": [
-        {"extreme_1": 0, "extreme_2": 1, "type": "0", "length": 10, "eastbound": true, "westbound": true},
-        {"extreme_1": 1, "extreme_2": 2, "type": "0", "length": 10, "eastbound": true, "westbound": true},
-        {"extreme_1": 2, "extreme_2": 3, "type": "0", "length": 10, "eastbound": true, "westbound": true}
+        {"extreme_1": 0, "extreme_2": 1, "type": "0", "length": 10, "eastbound": true, "westbound": true, "min_distance_from_w": 0, "min_distance_from_e": 20},
+        {"extreme_1": 1, "extreme_2": 2, "type": "0", "length": 10, "eastbound": true, "westbound": true, "min_distance_from_w": 10, "min_distance_from_e": 10},
+        {"extreme_1": 2, "extreme_2": 3, "type": "0", "length": 10, "eastbound": true, "westbound": true, "min_distance_from_w": 20, "min_distance_from_e": 0}
     ],
     
     "trains_number":    1,
