@@ -13,24 +13,22 @@ void MipSolver::solve() const {
     IloModel model(env);
     
     IloNumVarArray var_x(env);
-    IloNumVarArray var_y(env);
-    IloNumVarArray var_z(env);
-    IloNumVarArray var_theta(env);
     IloNumVarArray var_d(env);
     IloNumVarArray var_e(env);
     
     IloRangeArray eq_exit_sigma(env);
     IloRangeArray eq_enter_tau(env);
-    IloRangeArray eq_set_y(env);
+    IloRangeArray eq_one_train(env);
     IloRangeArray eq_flow(env);
-    IloRangeArray eq_z_sa(env);
-    IloRangeArray eq_set_z(env);
-    IloRangeArray eq_set_theta(env);
+    IloRangeArray eq_ensure_sa_visit(env);
     IloRangeArray eq_wt_1(env);
     IloRangeArray eq_wt_2(env);
     IloRangeArray eq_sa_delay(env);
     IloRangeArray eq_min_time(env);
-    IloRangeArray eq_headway(env);
+    IloRangeArray eq_headway1(env);
+    IloRangeArray eq_headway2(env);
+    IloRangeArray eq_headway3(env);
+    IloRangeArray eq_headway4(env);
     IloRangeArray eq_can_take_siding(env);
     IloRangeArray eq_heavy_siding(env);
     
@@ -59,16 +57,17 @@ void MipSolver::solve() const {
     model.add(obj);
     model.add(eq_exit_sigma);
     model.add(eq_enter_tau);
-    model.add(eq_set_y);
+    model.add(eq_one_train);
     model.add(eq_flow);
-    model.add(eq_z_sa);
-    model.add(eq_set_z);
-    model.add(eq_set_theta);
+    model.add(eq_ensure_sa_visit);
     model.add(eq_wt_1);
     model.add(eq_wt_2);
     model.add(eq_sa_delay);
     model.add(eq_min_time);
-    model.add(eq_headway);
+    model.add(eq_headway1);
+    model.add(eq_headway2);
+    model.add(eq_headway3);
+    model.add(eq_headway4);
     model.add(eq_can_take_siding);
     model.add(eq_heavy_siding);
     t_end = high_resolution_clock::now();
@@ -78,9 +77,6 @@ void MipSolver::solve() const {
     std::cout << "Adding columns to model... ";
     t_start = high_resolution_clock::now();
     model.add(var_x);
-    model.add(var_y);
-    model.add(var_z);
-    model.add(var_theta);
     model.add(var_d);
     model.add(var_e);
     t_end = high_resolution_clock::now();
@@ -104,9 +100,6 @@ void MipSolver::solve() const {
         std::cout << "Model solved. Extracting solution values." << std::endl;
         
         IloNumArray nx(env); cplex.getValues(nx, var_x);
-        IloNumArray ny(env); cplex.getValues(ny, var_y);
-        IloNumArray nz(env); cplex.getValues(nz, var_z);
-        IloNumArray ntheta(env); cplex.getValues(ntheta, var_theta);
         IloNumArray nd(env); cplex.getValues(nd, var_d);
         IloNumArray ne(env); cplex.getValues(ne, var_e);
         
@@ -128,41 +121,6 @@ void MipSolver::solve() const {
                         num_col++;
                     }
                 }
-            }
-        }
-        
-        // Print y
-        num_col = 0;
-        for(int i = 0; i < nt; i++) {
-            for(std::tie(vi1, vi1_end) = vertices(graphs[i]->g); vi1 != vi1_end; ++vi1) {
-                if(ny[num_col] > 0) {
-                    const Node& n1 {graphs[i]->g[*vi1]};
-                    
-                    std::cout << "y[" << i << "][" << n1.str() << "] = " << ny[num_col] << std::endl;
-                }
-                num_col++;
-            }
-        }
-        
-        // Print z
-        num_col = 0;
-        for(int i = 0; i < nt; i++) {
-            for(int s = 0; s < ns; s++) {
-                if(nz[num_col] > 0) {
-                    std::cout << "z[" << i << "][" << d->segments[s]->id << "] = " << nz[num_col] << std::endl;
-                }
-                num_col++;
-            }
-        }
-        
-        // Print theta
-        num_col = 0;
-        for(int i = 0; i < nt; i++) {
-            for(int s = 0; s < ns; s++) {
-                if(ntheta[num_col] > 0) {
-                    std::cout << "theta[" << i << "][" << d->segments[s]->id << "] = " << ntheta[num_col] << std::endl;
-                }
-                num_col++;
             }
         }
         
@@ -195,7 +153,7 @@ void MipSolver::solve() const {
             }
         }
         
-        nx.end(); ny.end(); nz.end(); ntheta.end(); nd.end(); ne.end();
+        nx.end(); nd.end(); ne.end();
     }
     
     env.end();    
