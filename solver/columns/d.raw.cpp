@@ -100,6 +100,19 @@ for(int i = 0; i < nt; i++) {
         }
     }
     
+    // ********** eq_exact_time **********
+    num_row = 0;
+    for(int ii = 0; ii < nt; ii++) {
+        vi_t vi, vi_end;
+        for(std::tie(vi, vi_end) = vertices(graphs[ii]->g); vi != vi_end; ++vi) {
+            const Node& n = graphs[ii]->g[*vi];
+            if(n.s != nullptr && (n.s->type == 'T' || n.s->type == 'X')) {
+                int coeff {0};
+                col += eq_exact_time[num_row++](coeff);
+            }
+        }
+    }
+    
     // ********** eq_headway1 **********
     num_row = 0;
     for(int ii = 0; ii < nt; ii++) {

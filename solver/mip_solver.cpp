@@ -25,6 +25,7 @@ void MipSolver::solve() const {
     IloRangeArray eq_wt_2(env);
     IloRangeArray eq_sa_delay(env);
     IloRangeArray eq_min_time(env);
+    IloRangeArray eq_exact_time(env);
     IloRangeArray eq_headway1(env);
     IloRangeArray eq_headway2(env);
     IloRangeArray eq_headway3(env);
@@ -64,6 +65,7 @@ void MipSolver::solve() const {
     model.add(eq_wt_2);
     model.add(eq_sa_delay);
     model.add(eq_min_time);
+    model.add(eq_exact_time);
     model.add(eq_headway1);
     model.add(eq_headway2);
     model.add(eq_headway3);
@@ -146,7 +148,7 @@ void MipSolver::solve() const {
         
                 for(int s = 0; s < d->trains[i].schedule.size(); s++) {
                     if(ne[num_col] > 0) {
-                        std::cout << "e[" << i << "][" << segs[i] << "] = " << ne[num_col] << std::endl;
+                        std::cout << "e[" << i << "][" << segs[s] << "] = " << ne[num_col] << std::endl;
                     }
                     num_col++;
                 }
