@@ -81,23 +81,25 @@ for(int i = 0; i < nt; i++) {
                 // ********** Obj Function **********
                 int obj_coeff {0};
                 
-                if(n1.s != nullptr && n2.s != nullptr) {
+                if(n1.s != nullptr) {
                     bool vi2_in_delta_plus_bar_vi1 {false};
-                                            
+                                        
                     oei_t oei, oei_end;
                     for(std::tie(oei, oei_end) = out_edges(*vi1, graphs[i]->g); oei != oei_end; ++oei) {
                         const Node& ntarget = graphs[i]->g[target(*oei, graphs[i]->g)];
-                                                                
+                                                            
                         if(ntarget == n2 && !(ntarget.s != nullptr && ntarget.s->id == n1.s->id)) {
                             vi2_in_delta_plus_bar_vi1 = true;
                             break;
                         }
                     }
-        
+    
                     if(vi2_in_delta_plus_bar_vi1) {
                         obj_coeff += c_d_i * n1.t;
                     }
-                                
+                }
+
+                if(n2.s != nullptr) {
                     bool vi1_in_delta_minus_bar_vi2 {false};
 
                     iei_t iei, iei_end;
@@ -112,7 +114,9 @@ for(int i = 0; i < nt; i++) {
                     if(vi1_in_delta_minus_bar_vi2) {
                         obj_coeff -= c_d_i * (n2.t + m_s_i2 - 1);
                     }
-                                
+                }
+                    
+                if(n1.s != nullptr && n2.s != nullptr) {          
                     bool vi1_in_delta_minus_vi2 {false};
         
                     for(std::tie(iei, iei_end) = in_edges(*vi2, graphs[i]->g); iei != iei_end; ++iei) {
