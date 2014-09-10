@@ -436,57 +436,57 @@ for(int i = 0; i < nt; i++) {
                 }
                 
                 // ********** eq_exact_time **********
-                num_row = 0;
-                for(int ii = 0; ii < nt; ii++) {
-                    vi_t vi, vi_end;
-                    for(std::tie(vi, vi_end) = vertices(graphs[ii]->g); vi != vi_end; ++vi) {
-                        const Node& n = graphs[ii]->g[*vi];
-                                                
-                        if(n.s != nullptr && (n.s->type == 'T' || n.s->type == 'X')) {
-                            int coeff {0};
-                            
-                            if(i == ii) {                                
-                                if(n == n2) { // First sum
-                                    bool vi1_in_delta_minus_bar_vi2 {false};
-
-                                    iei_t iei, iei_end;
-                                    for(std::tie(iei, iei_end) = in_edges(*vi2, graphs[ii]->g); iei != iei_end; ++iei) {
-                                        const Node& nsource = graphs[ii]->g[source(*iei, graphs[ii]->g)];
-                                        if(nsource == n1 && !(nsource.s != nullptr && nsource.s->id == n2.s->id)) {
-                                            vi1_in_delta_minus_bar_vi2 = true;
-                                            break;
-                                        }
-                                    }
-
-                                    if(vi1_in_delta_minus_bar_vi2) {
-                                        coeff = 1;
-                                    }
-                                } else {
-                                    if( n1.s != nullptr &&
-                                        n.s->id == n1.s->id &&
-                                        n1.t != n.t + m_s_i1 - 1
-                                    ) { // Second sum
-                                        bool vi2_in_delta_plus_bar_vi1 {false};
-
-                                        oei_t oei, oei_end;
-                                        for(std::tie(oei, oei_end) = out_edges(*vi1, graphs[ii]->g); oei != oei_end; ++oei) {
-                                            const Node& ntarget = graphs[ii]->g[target(*oei, graphs[ii]->g)];
-                                            if(ntarget == n2 && !(ntarget.s != nullptr && ntarget.s->id == n1.s->id)) {
-                                                vi2_in_delta_plus_bar_vi1 = true;
-                                                break;
-                                            }
-                                        }
-
-                                        if(vi2_in_delta_plus_bar_vi1) {
-                                            coeff = 1;
-                                        }
-                                    }
-                                }
-                            }
-                            col += eq_exact_time[num_row++](coeff);
-                        }
-                    }
-                }
+                // num_row = 0;
+                // for(int ii = 0; ii < nt; ii++) {
+                //     vi_t vi, vi_end;
+                //     for(std::tie(vi, vi_end) = vertices(graphs[ii]->g); vi != vi_end; ++vi) {
+                //         const Node& n = graphs[ii]->g[*vi];
+                //
+                //         if(n.s != nullptr && (n.s->type == 'T' || n.s->type == 'X')) {
+                //             int coeff {0};
+                //
+                //             if(i == ii) {
+                //                 if(n == n2) { // First sum
+                //                     bool vi1_in_delta_minus_bar_vi2 {false};
+                //
+                //                     iei_t iei, iei_end;
+                //                     for(std::tie(iei, iei_end) = in_edges(*vi2, graphs[ii]->g); iei != iei_end; ++iei) {
+                //                         const Node& nsource = graphs[ii]->g[source(*iei, graphs[ii]->g)];
+                //                         if(nsource == n1 && !(nsource.s != nullptr && nsource.s->id == n2.s->id)) {
+                //                             vi1_in_delta_minus_bar_vi2 = true;
+                //                             break;
+                //                         }
+                //                     }
+                //
+                //                     if(vi1_in_delta_minus_bar_vi2) {
+                //                         coeff = 1;
+                //                     }
+                //                 } else {
+                //                     if( n1.s != nullptr &&
+                //                         n.s->id == n1.s->id &&
+                //                         n1.t != n.t + m_s_i1 - 1
+                //                     ) { // Second sum
+                //                         bool vi2_in_delta_plus_bar_vi1 {false};
+                //
+                //                         oei_t oei, oei_end;
+                //                         for(std::tie(oei, oei_end) = out_edges(*vi1, graphs[ii]->g); oei != oei_end; ++oei) {
+                //                             const Node& ntarget = graphs[ii]->g[target(*oei, graphs[ii]->g)];
+                //                             if(ntarget == n2 && !(ntarget.s != nullptr && ntarget.s->id == n1.s->id)) {
+                //                                 vi2_in_delta_plus_bar_vi1 = true;
+                //                                 break;
+                //                             }
+                //                         }
+                //
+                //                         if(vi2_in_delta_plus_bar_vi1) {
+                //                             coeff = 1;
+                //                         }
+                //                     }
+                //                 }
+                //             }
+                //             col += eq_exact_time[num_row++](coeff);
+                //         }
+                //     }
+                // }
                                                 
                 // ********** eq_headway1 **********
                 num_row = 0;

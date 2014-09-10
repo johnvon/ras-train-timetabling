@@ -18,8 +18,8 @@ std::cout << "\twt_2: created (" << row_num << ")" << std::endl;
 std::cout << "\tsa_delay: created (" << row_num << ")" << std::endl;
 #include <solver/rows/min_time.raw.cpp>
 std::cout << "\tmin_time: created (" << row_num << ")" << std::endl;
-#include <solver/rows/exact_time.raw.cpp>
-std::cout << "\texact_time: created (" << row_num << ")" << std::endl;
+// #include <solver/rows/exact_time.raw.cpp>
+// std::cout << "\texact_time: created (" << row_num << ")" << std::endl;
 #include <solver/rows/headway1.raw.cpp>
 std::cout << "\theadway1: created (" << row_num << ")" << std::endl;
 #include <solver/rows/headway2.raw.cpp>
