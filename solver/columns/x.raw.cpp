@@ -110,7 +110,7 @@ for(int i = 0; i < nt; i++) {
                     }
 
                     if(vi1_in_delta_minus_bar_vi2) {
-                        obj_coeff -= c_d_i * (n2.t + m_s_i2 + 1);
+                        obj_coeff -= c_d_i * (n2.t + m_s_i2 - 1);
                     }
                                 
                     bool vi1_in_delta_minus_vi2 {false};
