@@ -13,67 +13,68 @@ for(int i = 0; i < nt; i++) {
                             
                 double c_d_i {d->general_delay_price.at(d->trains[i].cl)};
                 
-                double speed {0};
+                double speed2 {0};
                 if(n2.s != nullptr) {
                     if(n2.s->type == '0') {
                         if(d->trains[i].westbound) {
-                            speed = d->speed_ew;
+                            speed2 = d->speed_ew;
                         } else {
-                            speed = d->speed_we;
+                            speed2 = d->speed_we;
                         }
                     } else if(n2.s->type == '1') {
-                        speed = d->speed_ew;
+                        speed2 = d->speed_ew;
                     } else if(n2.s->type == '2') {
-                        speed = d->speed_we;
+                        speed2 = d->speed_we;
                     } else if(n2.s->type == 'S') {
-                        speed = d->speed_siding;
+                        speed2 = d->speed_siding;
                     } else if(n2.s->type == 'T') {
-                        speed = d->speed_switch;
+                        speed2 = d->speed_switch;
                     } else if(n2.s->type == 'X') {
-                        speed = d->speed_xover;
+                        speed2 = d->speed_xover;
                     } else {
                         throw std::runtime_error("Unrecognised segment type!");
                     }
                 }
-                speed *= d->trains[i].speed_multi;        
+                speed2 *= d->trains[i].speed_multi;        
                 double m_s_i2 {0};
                 
                 if(n2.s != nullptr) {
-                    m_s_i2 = ceil(n2.s->length / speed);
+                    m_s_i2 = ceil(n2.s->length / speed2);
                 }
                 
+                double speed1 {0};
                 if(n1.s != nullptr) {
                     if(n1.s->type == '0') {
                         if(d->trains[i].westbound) {
-                            speed = d->speed_ew;
+                            speed1 = d->speed_ew;
                         } else {
-                            speed = d->speed_we;
+                            speed1 = d->speed_we;
                         }
                     } else if(n1.s->type == '1') {
-                        speed = d->speed_ew;
+                        speed1 = d->speed_ew;
                     } else if(n1.s->type == '2') {
-                        speed = d->speed_we;
+                        speed1 = d->speed_we;
                     } else if(n1.s->type == 'S') {
-                        speed = d->speed_siding;
+                        speed1 = d->speed_siding;
                     } else if(n1.s->type == 'T') {
-                        speed = d->speed_switch;
+                        speed1 = d->speed_switch;
                     } else if(n1.s->type == 'X') {
-                        speed = d->speed_xover;
+                        speed1 = d->speed_xover;
                     } else {
                         throw std::runtime_error("Unrecognised segment type!");
                     }
                 }
-                speed *= d->trains[i].speed_multi;        
+                speed1 *= d->trains[i].speed_multi;        
                 double m_s_i1 {0};
                 
                 if(n1.s != nullptr) {
-                    m_s_i1 = ceil(n1.s->length / speed);
+                    m_s_i1 = ceil(n1.s->length / speed1);
                 }
                 
                 int eta_i_n2 {1};
                 if( n2.s == nullptr ||
-                    n2.s->eastbound && d->trains[i].eastbound ||
-                    n2.s->westbound && d->trains[i].westbound) {
+                    (n2.s->eastbound && d->trains[i].eastbound) ||
+                    (n2.s->westbound && d->trains[i].westbound)) {
                     eta_i_n2 = 0;
                 }
                                             
@@ -109,7 +110,7 @@ for(int i = 0; i < nt; i++) {
                     }
 
                     if(vi1_in_delta_minus_bar_vi2) {
-                        obj_coeff += -1 * (n2.t + m_s_i2);
+                        obj_coeff += -1 * c_d_i * (n2.t + m_s_i2);
                     }
                                 
                     bool vi1_in_delta_minus_vi2 {false};
