@@ -107,6 +107,7 @@ void MipSolver::solve() const {
         
         std::cout << "The solution is the following:" << std::endl;
         
+        auto solx = std::vector<std::vector<std::vector<int>>>(nt, std::vector<std::vector<int>>(ns, std::vector<int>(ti + 1, 0))); // ti + 1 because time starts from 1, not from 0
         int num_col {0};
         
         // Print x
@@ -117,6 +118,11 @@ void MipSolver::solve() const {
                         if(nx[num_col] > 0) {
                             const Node& n1 {graphs[i]->g[*vi1]};
                             const Node& n2 {graphs[i]->g[*vi2]};
+                            
+                            if(n1.s != nullptr && n2.s != nullptr) {
+                                solx[i][n1.s->id][n1.t] = 1;
+                                solx[i][n2.s->id][n2.t] = 1;
+                            }
                             
                             std::cout << "x[" << i << "][" << n1.str() << "][" << n2.str() << "] = " << nx[num_col] << std::endl;
                         }
@@ -156,6 +162,119 @@ void MipSolver::solve() const {
         }
         
         nx.end(); nd.end(); ne.end();
+        
+        std::vector<int> starting_seg(nt, -1);
+        std::vector<int> ending_seg(nt, -1);
+        std::vector<int> starting_time(nt, -1);
+        std::vector<int> ending_time(nt, -1);
+        
+        for(int i = 0; i < nt; i++) {        
+            for(int t = 1; t <= ti; t++) {
+                bool first_segment {false};
+            
+                for(int s = 0; s < ns; s++) {
+                    if(solx[i][s][t] > 0) {
+                        first_segment = true;
+                        starting_seg[i] = s;
+                        break;
+                    }
+                }
+            
+                if(first_segment) {
+                    starting_time[i] = t;
+                    break;
+                }
+            }
+        
+            for(int t = ti; t > 1; t--) {
+                bool last_segment {false};
+            
+                for(int s = 0; s < ns; s++) {
+                    if(solx[i][s][t] > 0) {
+                        last_segment = true;
+                        ending_seg[i] = s;
+                        break;
+                    }
+                }
+            
+                if(last_segment) {
+                    ending_time[i] = t;
+                    break;
+                }
+            }
+            
+            std::cout << "Train " << i << std::endl;
+            std::cout << "\tStarted at segment " << starting_seg[i] << " at time " << starting_time[i] << std::endl;
+            std::cout << "\tEnded at segment " << ending_seg[i] << " at time " << ending_time[i] << std::endl;
+            std::cout << "\t\tEnd terminal TW: [" << (d->trains[i].terminal_wt - d->want_time_tw_start) << ", " << (d->trains[i].terminal_wt + d->want_time_tw_end) << "]" << std::endl;
+            
+            for(auto kv : d->trains[i].schedule) {
+                int visit_time {-1};
+                
+                for(int t = ti; t > 1; t--) {
+                    if(solx[i][kv.first][t] > 0) {
+                        visit_time = t;
+                        break;
+                    }
+                }
+                
+                std::cout << "\tVisited SA point through segment " << kv.first << " at time " << visit_time << std::endl;
+                std::cout << "\t\tSA point optimal time: " << kv.second << std::endl;
+                std::cout << "\t\tSA point max visit time: " << (kv.second + d->schedule_tw_end) << std::endl;
+            }
+            
+            for(int s = 0; s < ns; s++) {
+                int entry_time {-1};
+                int exit_time {-1};
+                
+                for(int t = 1; t <= ti; t++) {
+                    if(solx[i][s][i] > 0) {
+                        entry_time = t;
+                        break;
+                    }
+                }
+                
+                for(int t = ti; t > 1; t--) {
+                    if(solx[i][s][t] > 0) {
+                        exit_time = t;
+                        break;
+                    }
+                }
+                
+                if(entry_time > 0 && exit_time > 0) {
+                    double speed {0};
+                    if(d->segments[s]->type == '0') {
+                        if(d->trains[i].westbound) {
+                            speed = d->speed_ew;
+                        } else {
+                            speed = d->speed_we;
+                        }
+                    } else if(d->segments[s]->type == '1') {
+                        speed = d->speed_ew;
+                    } else if(d->segments[s]->type == '2') {
+                        speed = d->speed_we;
+                    } else if(d->segments[s]->type == 'S') {
+                        speed = d->speed_siding;
+                    } else if(d->segments[s]->type == 'T') {
+                        speed = d->speed_switch;
+                    } else if(d->segments[s]->type == 'X') {
+                        speed = d->speed_xover;
+                    } else {
+                        throw std::runtime_error("Unrecognised segment type!");
+                    }
+                    
+                    speed *= d->trains[i].speed_multi;        
+                    double m_s_i {ceil(d->segments[s]->length / speed)};
+                    
+                    if(exit_time - entry_time + 1 > m_s_i) {
+                        std::cout << "\tStayed on segment " << s << " for " << (exit_time - entry_time + 1) << " minutes" << std::endl;
+                        std::cout << "\t\tEntered at the beginning of minute " << entry_time << std::endl;
+                        std::cout << "\t\tWent out at the end of minute " << exit_time << std::endl;
+                        std::cout << "\t\tOptimal travel time is of " << m_s_i << " minutes" << std::endl;
+                    }
+                }
+            }
+        }
     }
     
     env.end();    
