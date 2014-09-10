@@ -118,7 +118,8 @@ for(int i = 0; i < nt; i++) {
                     
                 if(n1.s != nullptr && n2.s != nullptr) {          
                     bool vi1_in_delta_minus_vi2 {false};
-        
+                    
+                    iei_t iei, iei_end;
                     for(std::tie(iei, iei_end) = in_edges(*vi2, graphs[i]->g); iei != iei_end; ++iei) {
                         const Node& nsource = graphs[i]->g[source(*iei, graphs[i]->g)];
                         if(nsource == n1) {
