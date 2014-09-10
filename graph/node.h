@@ -22,6 +22,9 @@ struct Node {
         }
         return (s->id == other.s->id && t == other.t);
     }
+    bool operator!=(const Node& other) const {
+        return !(*this == other);
+    }
     std::string str() const {
         if(source) { return "sigma"; }
         if(sink) { return "tau"; }
