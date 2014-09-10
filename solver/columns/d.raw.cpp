@@ -21,17 +21,12 @@ for(int i = 0; i < nt; i++) {
         col += eq_enter_tau[ii](coeff);
     }
     
-    // ********** eq_set_y **********
+    // ********** eq_one_train **********
     int num_row {0};
-    for(int ii = 0; ii < nt; ii++) {
-        vi_t vi, vi_end;
-        for(std::tie(vi, vi_end) = vertices(graphs[ii]->g); vi != vi_end; ++vi) {
-            const Node& n {graphs[ii]->g[*vi]};
-
-            if(n.s != nullptr) {
-                int coeff {0};
-                col += eq_set_y[num_row++](coeff);
-            }
+    for(int ss = 0; ss < ns; ss++) {
+        for(int tt = 1; tt <= ti; tt++) {
+            int coeff {0};
+            col += eq_one_train[num_row++](coeff);
         }
     }
     
@@ -48,35 +43,17 @@ for(int i = 0; i < nt; i++) {
         }
     }
     
-    // ********** eq_z_sa **********
+    // ********** eq_ensure_sa_visit **********
     num_row = 0;
     for(int ii = 0; ii < nt; ii++) {
         if(d->trains[ii].schedule_adherence) {
             for(int chk = 0; chk < d->trains[ii].schedule.size(); chk++) {
                 int coeff {0};
-                col += eq_z_sa[num_row++](coeff);
+                col += eq_ensure_sa_visit[num_row++](coeff);
             }
         }
     }
-    
-    // ********** eq_set_z **********
-    num_row = 0;
-    for(int ii = 0; ii < nt; ii++) {
-        for(int ss = 0; ss < ns; ss++) {
-            int coeff {0};
-            col += eq_set_z[num_row++](coeff);
-        }
-    }
-    
-    // ********** eq_set_theta **********
-    num_row = 0;
-    for(int ii = 0; ii < nt; ii++) {
-        for(int ss = 0; ss < ns; ss++) {
-            int coeff {0};
-            col += eq_set_theta[num_row++](coeff);
-        }
-    }
-    
+
     // ********** eq_wt_1 **********
     for(int ii = 0; ii < nt; ii++) {
         int coeff {0};
@@ -113,21 +90,77 @@ for(int i = 0; i < nt; i++) {
     // ********** eq_min_time **********
     num_row = 0;
     for(int ii = 0; ii < nt; ii++) {
-        for(int ss = 0; ss < ns; ss++) {
-            int coeff {0};
-            col += eq_min_time[num_row++](coeff);
+        vi_t vi, vi_end;
+        for(std::tie(vi, vi_end) = vertices(graphs[ii]->g); vi != vi_end; ++vi) {
+            const Node& n = graphs[ii]->g[*vi];
+            if(n.s != nullptr) {
+                int coeff {0};
+                col += eq_min_time[num_row++](coeff);
+            }
         }
     }
     
-    // ********** eq_headway **********
+    // ********** eq_exact_time **********
     num_row = 0;
     for(int ii = 0; ii < nt; ii++) {
-        for(int ss = 0; ss < ns; ss++) {
-            for(int tt = 1; tt <= ti; tt++) {
-                if(graphs[ii]->vertex_for(d->segments[ss], tt).first) {
-                    int coeff {0};
-                    col += eq_headway[num_row++](coeff);
-                }
+        vi_t vi, vi_end;
+        for(std::tie(vi, vi_end) = vertices(graphs[ii]->g); vi != vi_end; ++vi) {
+            const Node& n = graphs[ii]->g[*vi];
+            if(n.s != nullptr && (n.s->type == 'T' || n.s->type == 'X')) {
+                int coeff {0};
+                col += eq_exact_time[num_row++](coeff);
+            }
+        }
+    }
+    
+    // ********** eq_headway1 **********
+    num_row = 0;
+    for(int ii = 0; ii < nt; ii++) {
+        vi_t vi, vi_end;
+        for(std::tie(vi, vi_end) = vertices(graphs[ii]->g); vi != vi_end; ++vi) {
+            const Node& n = graphs[ii]->g[*vi];
+            if(n.s != nullptr) {
+                int coeff {0};
+                col += eq_headway1[num_row++](coeff);
+            }
+        }
+    }
+    
+    // ********** eq_headway2 **********
+    num_row = 0;
+    for(int ii = 0; ii < nt; ii++) {
+        vi_t vi, vi_end;
+        for(std::tie(vi, vi_end) = vertices(graphs[ii]->g); vi != vi_end; ++vi) {
+            const Node& n = graphs[ii]->g[*vi];
+            if(n.s != nullptr) {
+                int coeff {0};
+                col += eq_headway2[num_row++](coeff);
+            }
+        }
+    }
+    
+    // ********** eq_headway3 **********
+    num_row = 0;
+    for(int ii = 0; ii < nt; ii++) {
+        vi_t vi, vi_end;
+        for(std::tie(vi, vi_end) = vertices(graphs[ii]->g); vi != vi_end; ++vi) {
+            const Node& n = graphs[ii]->g[*vi];
+            if(n.s != nullptr) {
+                int coeff {0};
+                col += eq_headway3[num_row++](coeff);
+            }
+        }
+    }
+    
+    // ********** eq_headway4 **********
+    num_row = 0;
+    for(int ii = 0; ii < nt; ii++) {
+        vi_t vi, vi_end;
+        for(std::tie(vi, vi_end) = vertices(graphs[ii]->g); vi != vi_end; ++vi) {
+            const Node& n = graphs[ii]->g[*vi];
+            if(n.s != nullptr) {
+                int coeff {0};
+                col += eq_headway4[num_row++](coeff);
             }
         }
     }
@@ -135,14 +168,12 @@ for(int i = 0; i < nt; i++) {
     // ********** eq_can_take_siding **********
     num_row = 0;
     for(int ii = 0; ii < nt; ii++) {
-        for(int ss = 0; ss < ns; ss++) {
-            if(d->segments[ss]->type == 'S') {
-                for(int tt = 1; tt <= ti; tt++) {
-                    if(graphs[ii]->vertex_for(d->segments[ss], tt).first) {
-                        int coeff {0};
-                        col += eq_can_take_siding[num_row++](coeff);
-                    }
-                }
+        vi_t vi, vi_end;
+        for(std::tie(vi, vi_end) = vertices(graphs[ii]->g); vi != vi_end; ++vi) {
+            const Node& n = graphs[ii]->g[*vi];
+            if(n.s != nullptr && n.s->type == 'S') {
+                int coeff {0};
+                col += eq_can_take_siding[num_row++](coeff);
             }
         }
     }
@@ -151,14 +182,12 @@ for(int i = 0; i < nt; i++) {
     num_row = 0;
     for(int ii = 0; ii < nt; ii++) {
         if(d->trains[ii].heavy) {
-            for(int ss = 0; ss < ns; ss++) {
-                if(d->segments[ss]->type == 'S') {
-                    for(int tt = 1; tt <= ti; tt++) {
-                        if(graphs[ii]->vertex_for(d->segments[ss], tt).first) {
-                            int coeff {0};
-                            col += eq_heavy_siding[num_row++](coeff);
-                        }
-                    }
+            vi_t vi, vi_end;
+            for(std::tie(vi, vi_end) = vertices(graphs[ii]->g); vi != vi_end; ++vi) {
+                const Node& n = graphs[ii]->g[*vi];
+                if(n.s != nullptr && n.s->type == 'S') {
+                    int coeff {0};
+                    col += eq_heavy_siding[num_row++](coeff);
                 }
             }
         }

@@ -26,6 +26,7 @@ struct Data {
     void parse();
     void print_stats() const;
     bool is_main(std::shared_ptr<const Segment> m, std::shared_ptr<const Segment> s) const;
+    int segment_id_for_node(int node_number, bool westbound_train) const;
 };
 
 #endif
