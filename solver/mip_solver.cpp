@@ -99,6 +99,21 @@ void MipSolver::solve() const {
     
     cplex.setParam(IloCplex::Threads, 4);
     
+    cplex.setParam(IloCplex::Probe, 3);
+    
+    cplex.setParam(IloCplex::MIPEmphasis, 1);
+    
+    // cplex.setParam(IloCplex::Cliques, 2);
+    // cplex.setParam(IloCplex::Covers, 3);
+    // cplex.setParam(IloCplex::DisjCuts, 3);
+    // cplex.setParam(IloCplex::FlowCovers, 2);
+    // cplex.setParam(IloCplex::FlowPaths, 2);
+    // cplex.setParam(IloCplex::GUBCovers, 2);
+    // cplex.setParam(IloCplex::ImplBd, 2);
+    // cplex.setParam(IloCplex::MIRCuts, 2);
+    // cplex.setParam(IloCplex::ZeroHalfCuts, 2);
+    // cplex.setParam(IloCplex::MCFCuts, 2);
+    
     std::cout << "Solving model..." << std::endl;
     if(cplex.solve()) {
         std::cout << "Model solved. Extracting solution values." << std::endl;
