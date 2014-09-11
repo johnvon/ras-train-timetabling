@@ -32,6 +32,7 @@ void MipSolver::solve() const {
     IloRangeArray eq_headway4(env);
     IloRangeArray eq_can_take_siding(env);
     IloRangeArray eq_heavy_siding(env);
+    IloRangeArray eq_positive_obj(env);
     
     IloObjective obj = IloMinimize(env);
     
@@ -72,6 +73,7 @@ void MipSolver::solve() const {
     model.add(eq_headway4);
     model.add(eq_can_take_siding);
     model.add(eq_heavy_siding);
+    model.add(eq_positive_obj);
     t_end = high_resolution_clock::now();
     time_span = duration_cast<duration<double>>(t_end - t_start);
     std::cout << time_span.count() << " seconds" << std::endl;

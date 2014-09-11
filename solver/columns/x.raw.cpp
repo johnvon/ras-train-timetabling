@@ -814,6 +814,8 @@ for(int i = 0; i < nt; i++) {
                         }
                     }
                 }
+                
+                col += eq_positive_obj[0](obj_coeff);
                                             
                 IloNumVar v(col, 0.0, 1.0, IloNumVar::Bool, (
                     "x_train_" + std::to_string(i) + "_from_" + n1.str() + "_to_" + n2.str()

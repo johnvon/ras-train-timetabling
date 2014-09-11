@@ -193,6 +193,8 @@ for(int i = 0; i < nt; i++) {
         }
     }
     
+    col += eq_positive_obj[0](obj_coeff);
+    
     // We strengthen the bound on d by calculating the maximum possible delay
     int max_delay {std::max(d->trains[i].terminal_wt, ti - d->trains[i].terminal_wt)};
     
