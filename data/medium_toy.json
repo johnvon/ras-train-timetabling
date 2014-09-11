@@ -1,0 +1,114 @@
+{
+    "name":             "Toy medium-instance",
+    
+    "speed_ew":         5,
+    "speed_we":         5,
+    "speed_siding":     3,
+    "speed_switch":     3,
+    "speed_xover":      3,
+    
+    "time_intervals":       60,
+    "want_time_tw_start":   6,
+    "want_time_tw_end":     12,
+    "schedule_tw_end":      12,
+    "headway":              2,
+    
+    "general_delay_price": {
+        "A": 10.0,
+        "B": 8.0,
+        "C": 6.0,
+        "D": 5.0,
+        "E": 2.0,
+        "F": 1.0
+    },
+    "terminal_delay_price": 1.0,
+    "schedule_delay_price": 3.0,
+    "unpreferred_price":    1.0,
+    
+    "segments_number":  13,
+    "segments": [
+        {"extreme_1": 0, "extreme_2": 1, "type": "0", "length": 15, "eastbound": true, "westbound": true, "min_distance_from_w": 0, "min_distance_from_e": 28},
+        {"extreme_1": 1, "extreme_2": 2, "type": "0", "length": 3, "eastbound": true, "westbound": true, "min_distance_from_w": 10, "min_distance_from_e": 26},
+        {"extreme_1": 2, "extreme_2": 3, "type": "0", "length": 3, "eastbound": true, "westbound": true, "min_distance_from_w": 12, "min_distance_from_e": 24},
+        {"extreme_1": 3, "extreme_2": 4, "type": "0", "length": 15, "eastbound": true, "westbound": true, "min_distance_from_w": 14, "min_distance_from_e": 14},
+        {"extreme_1": 4, "extreme_2": 5, "type": "0", "length": 3, "eastbound": true, "westbound": true, "min_distance_from_w": 24, "min_distance_from_e": 12},
+        {"extreme_1": 5, "extreme_2": 6, "type": "0", "length": 3, "eastbound": true, "westbound": true, "min_distance_from_w": 26, "min_distance_from_e": 10},
+        {"extreme_1": 6, "extreme_2": 7, "type": "0", "length": 15, "eastbound": true, "westbound": true, "min_distance_from_w": 28, "min_distance_from_e": 0},
+        {"extreme_1": 1, "extreme_2": 8, "type": "T", "length": 2, "eastbound": true, "westbound": true, "min_distance_from_w": 10, "min_distance_from_e": 29},
+        {"extreme_1": 8, "extreme_2": 9, "type": "S", "length": 6, "eastbound": true, "westbound": true, "min_distance_from_w": 11, "min_distance_from_e": 25},
+        {"extreme_1": 9, "extreme_2": 3, "type": "T", "length": 2, "eastbound": true, "westbound": true, "min_distance_from_w": 15, "min_distance_from_e": 24},
+        {"extreme_1": 4, "extreme_2": 10, "type": "T", "length": 2, "eastbound": true, "westbound": true, "min_distance_from_w": 24, "min_distance_from_e": 15},
+        {"extreme_1": 10, "extreme_2": 11, "type": "S", "length": 6, "eastbound": true, "westbound": true, "min_distance_from_w": 25, "min_distance_from_e": 11},
+        {"extreme_1": 11, "extreme_2": 6, "type": "T", "length": 2, "eastbound": true, "westbound": true, "min_distance_from_w": 29, "min_distance_from_e": 10}
+    ],
+    
+    "trains_number":    4,
+    "trains": [
+        {
+            "class": "A",
+            "schedule_adherence": true,
+            "entry_time": 1,
+            "origin_node": 0,
+            "destination_node": 7,
+            "eastbound": true,
+            "westbound": false,
+            "speed_multi": 1,
+            "length": 0.5,
+            "tob": 75,
+            "hazmat": false,
+            "terminal_wt": 18,
+            "schedule": [
+                {"node": 4, "time": 12}
+            ]
+        },
+        {
+            "class": "C",
+            "schedule_adherence": false,
+            "entry_time": 18,
+            "origin_node": 0,
+            "destination_node": 7,
+            "eastbound": true,
+            "westbound": false,
+            "speed_multi": 1,
+            "length": 0.5,
+            "tob": 75,
+            "hazmat": false,
+            "terminal_wt": 54,
+            "schedule": []
+        },
+        {
+            "class": "E",
+            "schedule_adherence": false,
+            "entry_time": 12,
+            "origin_node": 7,
+            "destination_node": 0,
+            "eastbound": false,
+            "westbound": true,
+            "speed_multi": 1,
+            "length": 0.5,
+            "tob": 75,
+            "hazmat": false,
+            "terminal_wt": 45,
+            "schedule": []
+        },
+        {
+            "class": "E",
+            "schedule_adherence": false,
+            "entry_time": 1,
+            "origin_node": 7,
+            "destination_node": 0,
+            "eastbound": false,
+            "westbound": true,
+            "speed_multi": 1,
+            "length": 0.5,
+            "tob": 75,
+            "hazmat": false,
+            "terminal_wt": 30,
+            "schedule": []
+        }
+    ],
+    
+    "mow": [
+      {"extreme_1": 3, "extreme_2": 4, "start_time": 12, "end_time": 24}
+    ]
+}
