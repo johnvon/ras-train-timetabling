@@ -73,7 +73,7 @@ Graph::Graph(const std::shared_ptr<const Data> d, const Train tr) : d{d}, tr{tr}
     /****************** 3: (s, t) -> (s, t + 1) ******************/
     
     for(auto s : d->segments) {
-        if(s->type != 'T' && s->type != 'X') {
+        if(s->type != 'T' && s->type != 'X' && s->length <= tr.length) {
             for(int t = tr.entry_time; t < d->time_intervals; t++) {
                 auto ev_1 = vertex_for(s, t);
                 auto ev_2 = vertex_for(s, t + 1);
