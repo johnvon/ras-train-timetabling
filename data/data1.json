@@ -1,0 +1,147 @@
+{
+    "name":             "RAS Instance 1",
+    
+    "speed_ew":         1.17,
+    "speed_we":         1.33,
+    "speed_siding":     0.33,
+    "speed_switch":     0.25,
+    "speed_xover":      0.25,
+    
+    "time_intervals":       1440,
+    "want_time_tw_start":   60,
+    "want_time_tw_end":     180,
+    "schedule_tw_end":      120,
+    "headway":              5,
+    
+    "general_delay_price": {
+        "A": 10.00,
+        "B": 8.33,
+        "C": 6.67,
+        "D": 5,
+        "E": 2.5,
+        "F": 1.67
+    },
+    "terminal_delay_price": 1.25,
+    "schedule_delay_price": 3.33,
+    "unpreferred_price": 0.83,
+    
+    "segments_number":  82,
+    "segments": [
+        {"extreme_1": 0, "extreme_2": 1, "type": "0", "length": 0.3, "eastbound": true, "westbound": true, "min_distance_from_w": 0, "min_distance_from_e": 107.7},
+        {"extreme_1": 1, "extreme_2": 3, "type": "0", "length": 2, "eastbound": true, "westbound": true, "min_distance_from_w": 0.3, "min_distance_from_e": 105.7},
+        {"extreme_1": 3, "extreme_2": 5, "type": "0", "length": 0.3, "eastbound": true, "westbound": true, "min_distance_from_w": 2.3, "min_distance_from_e": 105.4},
+        {"extreme_1": 5, "extreme_2": 6, "type": "0", "length": 5, "eastbound": true, "westbound": true, "min_distance_from_w": 2.6, "min_distance_from_e": 100.4},
+        {"extreme_1": 6, "extreme_2": 7, "type": "0", "length": 4, "eastbound": true, "westbound": true, "min_distance_from_w": 7.6, "min_distance_from_e": 96.4},
+        {"extreme_1": 7, "extreme_2": 8, "type": "0", "length": 0.3, "eastbound": true, "westbound": true, "min_distance_from_w": 11.6, "min_distance_from_e": 96.1},
+        {"extreme_1": 8, "extreme_2": 10, "type": "0", "length": 2, "eastbound": true, "westbound": true, "min_distance_from_w": 11.9, "min_distance_from_e": 94.1},
+        {"extreme_1": 10, "extreme_2": 12, "type": "0", "length": 0.3, "eastbound": true, "westbound": true, "min_distance_from_w": 13.9, "min_distance_from_e": 93.8},
+        {"extreme_1": 12, "extreme_2": 13, "type": "0", "length": 5, "eastbound": true, "westbound": true, "min_distance_from_w": 14.2, "min_distance_from_e": 88.8},
+        {"extreme_1": 13, "extreme_2": 14, "type": "0", "length": 5, "eastbound": true, "westbound": true, "min_distance_from_w": 19.2, "min_distance_from_e": 83.8},
+        {"extreme_1": 14, "extreme_2": 15, "type": "0", "length": 0.3, "eastbound": true, "westbound": true, "min_distance_from_w": 24.2, "min_distance_from_e": 83.5},
+        {"extreme_1": 15, "extreme_2": 17, "type": "0", "length": 2, "eastbound": true, "westbound": true, "min_distance_from_w": 24.5, "min_distance_from_e": 81.5},
+        {"extreme_1": 17, "extreme_2": 19, "type": "0", "length": 0.3, "eastbound": true, "westbound": true, "min_distance_from_w": 26.5, "min_distance_from_e": 81.2},
+        {"extreme_1": 19, "extreme_2": 20, "type": "0", "length": 5, "eastbound": true, "westbound": true, "min_distance_from_w": 26.8, "min_distance_from_e": 76.2},
+        {"extreme_1": 20, "extreme_2": 21, "type": "0", "length": 6, "eastbound": true, "westbound": true, "min_distance_from_w": 31.8, "min_distance_from_e": 70.2},
+        {"extreme_1": 21, "extreme_2": 22, "type": "0", "length": 0.3, "eastbound": true, "westbound": true, "min_distance_from_w": 37.8, "min_distance_from_e": 69.9},
+        {"extreme_1": 22, "extreme_2": 25, "type": "0", "length": 2, "eastbound": true, "westbound": true, "min_distance_from_w": 38.1, "min_distance_from_e": 67.9},
+        {"extreme_1": 25, "extreme_2": 26, "type": "0", "length": 0.3, "eastbound": true, "westbound": true, "min_distance_from_w": 40.1, "min_distance_from_e": 67.6},
+        {"extreme_1": 26, "extreme_2": 27, "type": "0", "length": 1, "eastbound": true, "westbound": true, "min_distance_from_w": 40.4, "min_distance_from_e": 66.6},
+        {"extreme_1": 27, "extreme_2": 28, "type": "0", "length": 0.3, "eastbound": true, "westbound": true, "min_distance_from_w": 41.4, "min_distance_from_e": 66.3},
+        {"extreme_1": 28, "extreme_2": 30, "type": "0", "length": 3, "eastbound": true, "westbound": true, "min_distance_from_w": 41.7, "min_distance_from_e": 63.3},
+        {"extreme_1": 30, "extreme_2": 31, "type": "0", "length": 3, "eastbound": true, "westbound": true, "min_distance_from_w": 44.7, "min_distance_from_e": 60.3},
+        {"extreme_1": 31, "extreme_2": 32, "type": "0", "length": 0.3, "eastbound": true, "westbound": true, "min_distance_from_w": 47.7, "min_distance_from_e": 60},
+        {"extreme_1": 32, "extreme_2": 34, "type": "0", "length": 2, "eastbound": true, "westbound": true, "min_distance_from_w": 48, "min_distance_from_e": 58},
+        {"extreme_1": 34, "extreme_2": 36, "type": "0", "length": 0.3, "eastbound": true, "westbound": true, "min_distance_from_w": 50, "min_distance_from_e": 57.7},
+        {"extreme_1": 36, "extreme_2": 37, "type": "0", "length": 3, "eastbound": true, "westbound": true, "min_distance_from_w": 50.3, "min_distance_from_e": 54.7},
+        
+        {"extreme_1": 41, "extreme_2": 42, "type": "1", "length": 2, "eastbound": true, "westbound": false, "min_distance_from_w": 53.6, "min_distance_from_e": 52.4},
+        {"extreme_1": 42, "extreme_2": 44, "type": "1", "length": 3, "eastbound": true, "westbound": false, "min_distance_from_w": 55.6, "min_distance_from_e": 49.4},
+        {"extreme_1": 44, "extreme_2": 46, "type": "1", "length": 0.3, "eastbound": true, "westbound": false, "min_distance_from_w": 58.6, "min_distance_from_e": 49.1},
+        {"extreme_1": 46, "extreme_2": 48, "type": "1", "length": 4, "eastbound": true, "westbound": false, "min_distance_from_w": 58.9, "min_distance_from_e": 45.1},
+        {"extreme_1": 48, "extreme_2": 54, "type": "1", "length": 4, "eastbound": true, "westbound": false, "min_distance_from_w": 62.9, "min_distance_from_e": 41.1},
+        {"extreme_1": 54, "extreme_2": 57, "type": "1", "length": 0.3, "eastbound": true, "westbound": false, "min_distance_from_w": 66.9, "min_distance_from_e": 40.8},
+        {"extreme_1": 57, "extreme_2": 59, "type": "1", "length": 3, "eastbound": true, "westbound": false, "min_distance_from_w": 67.2, "min_distance_from_e": 37.8},
+        {"extreme_1": 59, "extreme_2": 61, "type": "1", "length": 3, "eastbound": true, "westbound": false, "min_distance_from_w": 70.2, "min_distance_from_e": 34.8},
+        {"extreme_1": 61, "extreme_2": 63, "type": "1", "length": 0.3, "eastbound": true, "westbound": false, "min_distance_from_w": 73.2, "min_distance_from_e": 34.5},
+        {"extreme_1": 63, "extreme_2": 65, "type": "1", "length": 3, "eastbound": true, "westbound": false, "min_distance_from_w": 73.5, "min_distance_from_e": 31.5},
+        {"extreme_1": 65, "extreme_2": 67, "type": "1", "length": 3, "eastbound": true, "westbound": false, "min_distance_from_w": 76.5, "min_distance_from_e": 28.5},
+        {"extreme_1": 67, "extreme_2": 69, "type": "1", "length": 0.3, "eastbound": true, "westbound": false, "min_distance_from_w": 79.5, "min_distance_from_e": 28.2},
+        
+        {"extreme_1": 37, "extreme_2": 40, "type": "2", "length": 0.3, "eastbound": false, "westbound": true, "min_distance_from_w": 53.3, "min_distance_from_e": 55},
+        {"extreme_1": 40, "extreme_2": 43, "type": "2", "length": 2, "eastbound": false, "westbound": true, "min_distance_from_w": 53.6, "min_distance_from_e": 53},
+        {"extreme_1": 43, "extreme_2": 45, "type": "2", "length": 3, "eastbound": false, "westbound": true, "min_distance_from_w": 55.6, "min_distance_from_e": 50},
+        {"extreme_1": 45, "extreme_2": 47, "type": "2", "length": 0.3, "eastbound": false, "westbound": true, "min_distance_from_w": 58.6, "min_distance_from_e": 49.7},
+        {"extreme_1": 47, "extreme_2": 49, "type": "2", "length": 4, "eastbound": false, "westbound": true, "min_distance_from_w": 58.9, "min_distance_from_e": 45.7},
+        {"extreme_1": 49, "extreme_2": 50, "type": "2", "length": 0.3, "eastbound": false, "westbound": true, "min_distance_from_w": 62.9, "min_distance_from_e": 45.4},
+        {"extreme_1": 50, "extreme_2": 52, "type": "2", "length": 2, "eastbound": false, "westbound": true, "min_distance_from_w": 63.2, "min_distance_from_e": 43.4},
+        {"extreme_1": 52, "extreme_2": 55, "type": "2", "length": 0.3, "eastbound": false, "westbound": true, "min_distance_from_w": 65.2, "min_distance_from_e": 43.1},
+        {"extreme_1": 55, "extreme_2": 56, "type": "2", "length": 2, "eastbound": false, "westbound": true, "min_distance_from_w": 65.5, "min_distance_from_e": 41.1},
+        {"extreme_1": 56, "extreme_2": 58, "type": "2", "length": 0.3, "eastbound": false, "westbound": true, "min_distance_from_w": 67.5, "min_distance_from_e": 40.8},        
+        {"extreme_1": 58, "extreme_2": 60, "type": "2", "length": 3, "eastbound": false, "westbound": true, "min_distance_from_w": 67.8, "min_distance_from_e": 37.8},
+        {"extreme_1": 60, "extreme_2": 62, "type": "2", "length": 3, "eastbound": false, "westbound": true, "min_distance_from_w": 70.8, "min_distance_from_e": 34.8},
+        {"extreme_1": 62, "extreme_2": 64, "type": "2", "length": 0.3, "eastbound": false, "westbound": true, "min_distance_from_w": 73.8, "min_distance_from_e": 34.5},
+        {"extreme_1": 64, "extreme_2": 66, "type": "2", "length": 3, "eastbound": false, "westbound": true, "min_distance_from_w": 74.1, "min_distance_from_e": 31.5},
+        {"extreme_1": 66, "extreme_2": 68, "type": "2", "length": 3, "eastbound": false, "westbound": true, "min_distance_from_w": 77.1, "min_distance_from_e": 28.5},
+        
+        {"extreme_1": 69, "extreme_2": 70, "type": "0", "length": 5, "eastbound": true, "westbound": true, "min_distance_from_w": 80.4, "min_distance_from_e": 23.2},
+        {"extreme_1": 70, "extreme_2": 71, "type": "0", "length": 5, "eastbound": true, "westbound": true, "min_distance_from_w": 85.4, "min_distance_from_e": 18.2},
+        {"extreme_1": 71, "extreme_2": 72, "type": "0", "length": 0.3, "eastbound": true, "westbound": true, "min_distance_from_w": 90.4, "min_distance_from_e": 17.9},
+        {"extreme_1": 72, "extreme_2": 74, "type": "0", "length": 2, "eastbound": true, "westbound": true, "min_distance_from_w": 90.7, "min_distance_from_e": 15.9},
+        {"extreme_1": 74, "extreme_2": 76, "type": "0", "length": 0.3, "eastbound": true, "westbound": true, "min_distance_from_w": 92.7, "min_distance_from_e": 15.6},
+        {"extreme_1": 76, "extreme_2": 77, "type": "0", "length": 4, "eastbound": true, "westbound": true, "min_distance_from_w": 93, "min_distance_from_e": 11.6},
+        {"extreme_1": 77, "extreme_2": 78, "type": "0", "length": 4, "eastbound": true, "westbound": true, "min_distance_from_w": 97, "min_distance_from_e": 7.6},
+        {"extreme_1": 78, "extreme_2": 79, "type": "0", "length": 0.3, "eastbound": true, "westbound": true, "min_distance_from_w": 101, "min_distance_from_e": 7.3},
+        {"extreme_1": 79, "extreme_2": 81, "type": "0", "length": 2, "eastbound": true, "westbound": true, "min_distance_from_w": 101.3, "min_distance_from_e": 5.3},
+        {"extreme_1": 81, "extreme_2": 38, "type": "0", "length": 0.3, "eastbound": true, "westbound": true, "min_distance_from_w": 103.3, "min_distance_from_e": 5},
+        {"extreme_1": 38, "extreme_2": 39, "type": "0", "length": 5, "eastbound": true, "westbound": true, "min_distance_from_w": 103.6, "min_distance_from_e": 0},
+        
+        {"extreme_1": 37, "extreme_2": 41, "type": "X", "length": 0.3, "eastbound": true, "westbound": true, "min_distance_from_w": 53.3, "min_distance_from_e": 54.4},
+        {"extreme_1": 44, "extreme_2": 47, "type": "X", "length": 0.3, "eastbound": true, "westbound": true, "min_distance_from_w": 58.6, "min_distance_from_e": 49.7},
+        {"extreme_1": 45, "extreme_2": 46, "type": "X", "length": 0.3, "eastbound": true, "westbound": true, "min_distance_from_w": 58.6, "min_distance_from_e": 49.1},
+        {"extreme_1": 54, "extreme_2": 58, "type": "X", "length": 0.3, "eastbound": true, "westbound": true, "min_distance_from_w": 66.9, "min_distance_from_e": 40.8},
+        {"extreme_1": 56, "extreme_2": 57, "type": "X", "length": 0.3, "eastbound": true, "westbound": true, "min_distance_from_w": 67.2, "min_distance_from_e": 41.1},
+        {"extreme_1": 68, "extreme_2": 69, "type": "X", "length": 0.3, "eastbound": true, "westbound": true, "min_distance_from_w": 80.1, "min_distance_from_e": 28.2},
+        
+        {"extreme_1": 0, "extreme_2": 2, "type": "T", "length": 0.3, "eastbound": true, "westbound": true, "min_distance_from_w": 0, "min_distance_from_e": 107.7},
+        {"extreme_1": 2, "extreme_2": 4, "type": "S", "length": 2, "eastbound": true, "westbound": true, "min_distance_from_w": 0.3, "min_distance_from_e": 105.7},
+        {"extreme_1": 4, "extreme_2": 5, "type": "T", "length": 0.3, "eastbound": true, "westbound": true, "min_distance_from_w": 2.3, "min_distance_from_e": 105.4},
+        
+        {"extreme_1": 14, "extreme_2": 16, "type": "T", "length": 0.3, "eastbound": true, "westbound": true, "min_distance_from_w": 24.2, "min_distance_from_e": 83.5},
+        {"extreme_1": 16, "extreme_2": 18, "type": "S", "length": 2, "eastbound": true, "westbound": true, "min_distance_from_w": 24.5, "min_distance_from_e": 81.5},
+        {"extreme_1": 18, "extreme_2": 19, "type": "T", "length": 0.3, "eastbound": true, "westbound": true, "min_distance_from_w": 26.5, "min_distance_from_e": 81.2},
+        
+        {"extreme_1": 78, "extreme_2": 80, "type": "T", "length": 0.3, "eastbound": true, "westbound": true,  "min_distance_from_w": 101, "min_distance_from_e": 7.3},
+        {"extreme_1": 80, "extreme_2": 82, "type": "S", "length": 2, "eastbound": true, "westbound": true, "min_distance_from_w": 101.3, "min_distance_from_e": 5.3},
+        {"extreme_1": 82, "extreme_2": 38, "type": "T", "length": 0.3, "eastbound": true, "westbound": true, "min_distance_from_w": 103.3, "min_distance_from_e": 5},
+        
+        {"extreme_1": 49, "extreme_2": 51, "type": "T", "length": 0.3, "eastbound": false, "westbound": true, "min_distance_from_w": 62.9, "min_distance_from_e": 45.4},
+        {"extreme_1": 51, "extreme_2": 53, "type": "S", "length": 2, "eastbound": false, "westbound": true, "min_distance_from_w": 63.2, "min_distance_from_e": 43.4},
+        {"extreme_1": 53, "extreme_2": 55, "type": "T", "length": 0.3, "eastbound": false, "westbound": true, "min_distance_from_w": 65.2, "min_distance_from_e": 43.1}
+    ],
+    
+    "trains_number":    1,
+    "trains": [
+        {
+            "class": "A",
+            "schedule_adherence": true,
+            "entry_time": 1,
+            "origin_node": 0,
+            "destination_node": 39,
+            "eastbound": true,
+            "westbound": false,
+            "speed_multi": 1,
+            "length": 1,
+            "tob": 75,
+            "hazmat": false,
+            "terminal_wt": 90,
+            "schedule": [
+                {"node": 37, "time": 60},
+                {"node": 39, "time": 130}
+            ]
+        }
+    ],
+    
+    "mow": [
+      {"extreme_1": 48, "extreme_2": 54, "start_time": 120, "end_time": 360}
+    ]
+}
