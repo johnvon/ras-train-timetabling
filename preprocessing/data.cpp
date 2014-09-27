@@ -121,30 +121,32 @@ void Data::print_stats() const {
             }
         }
     }
-    std::cout << "Segments from nodes: " << std::endl;
-    int node_number {0};
-    bool done_w {false};
-    bool done_e {false};
     
-    while(!done_w || !done_e) {
-        try {
-            done_w = false;
-            int segw = segment_id_for_node(node_number, true);
-            std::cout << "\tNode " << node_number << "; segment arriving from e: " << segw << std::endl;
-        } catch(...) {
-            done_w = true;
-        }
-        
-        try {
-            done_e = false;
-            int sege = segment_id_for_node(node_number, false);
-            std::cout << "\tNode " << node_number << "; segment arriving from w: " << sege << std::endl;
-        } catch(...) {
-            done_e = true;
-        }
-        
-        node_number++;
-    }
+    // The following only works if there is no "hole" in the node numbering!
+    // std::cout << "Segments from nodes: " << std::endl;
+    // int node_number {0};
+    // bool done_w {false};
+    // bool done_e {false};
+    //
+    // while(!done_w || !done_e) {
+    //     try {
+    //         done_w = false;
+    //         int segw = segment_id_for_node(node_number, true);
+    //         std::cout << "\tNode " << node_number << "; segment arriving from e: " << segw << std::endl;
+    //     } catch(...) {
+    //         done_w = true;
+    //     }
+    //
+    //     try {
+    //         done_e = false;
+    //         int sege = segment_id_for_node(node_number, false);
+    //         std::cout << "\tNode " << node_number << "; segment arriving from w: " << sege << std::endl;
+    //     } catch(...) {
+    //         done_e = true;
+    //     }
+    //
+    //     node_number++;
+    // }
 }
 
 bool Data::is_main(std::shared_ptr<const Segment> m, std::shared_ptr<const Segment> s) const {
@@ -152,23 +154,45 @@ bool Data::is_main(std::shared_ptr<const Segment> m, std::shared_ptr<const Segme
         return false;
     }
     
-    std::vector<std::shared_ptr<const Segment>> switches;
+    std::shared_ptr<const Segment> switch_e = nullptr, switch_w = nullptr;
     
     for(auto ss : segments) {
-        if(ss->type == 'T' && (ss->extreme_1 == s->extreme_2 || ss->extreme_2 == s->extreme_1)) {
-            switches.push_back(ss);
+        if(ss->type == 'T') {
+            if(ss->extreme_1 == s->extreme_2) {
+                switch_e = ss;
+            }
+            if(ss->extreme_2 == s->extreme_1) {
+                switch_w = ss;
+            }
         }
     }
     
-    if(switches.size() != 2) { throw std::runtime_error("Found a siding that doesn't have two switches!"); }
+    if(switch_e == nullptr || switch_w == nullptr) { throw std::runtime_error("Found a siding that doesn't have two switches!"); }
     
-    for(auto sw : switches) {
-        if(sw->extreme_1 == m->extreme_1 || sw->extreme_2 == m->extreme_2) {
-            return true;
+    std::shared_ptr<const Segment> next_to_switch_e = nullptr, next_to_switch_w = nullptr;
+    
+    for(auto ss : segments) {
+        if(ss->type == '0' || ss->type == '1' || ss->type == '2') {
+            if(ss->extreme_1 == switch_w->extreme_1) {
+                if(ss->id == m->id) {
+                    return true;
+                } else {
+                    next_to_switch_w = ss;
+                }
+            } 
+            if(ss->extreme_2 == switch_e->extreme_2) {
+                if(ss->id == m->id) {
+                    return true;
+                } else {
+                    next_to_switch_e = ss;
+                }
+            }
         }
     }
     
-    return false;
+    if(next_to_switch_e == nullptr || next_to_switch_w == nullptr) { throw std::runtime_error("Found less than 2 next_to_switches!"); }
+    
+    return (m->extreme_1 == next_to_switch_w->extreme_2 || m->extreme_2 == next_to_switch_e->extreme_1);
 }
 
 int Data::segment_id_for_node(int node_number, bool westbound_train) const {
