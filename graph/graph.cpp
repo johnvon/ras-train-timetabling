@@ -16,6 +16,8 @@ Graph::Graph(const std::shared_ptr<const Data> d, const Train tr) : d{d}, tr{tr}
     
     std::unordered_map<std::shared_ptr<const Segment>, std::pair<int, int>> times = calculate_times();
     
+    std::cout << "\t\tAdding vertices" << std::endl;
+    
     for(auto s : d->segments) {
         if(tr.hazmat && (s->type == 'S' || s->type == 'T')) {
             continue;
@@ -36,6 +38,8 @@ Graph::Graph(const std::shared_ptr<const Data> d, const Train tr) : d{d}, tr{tr}
         }
     }
         
+    std::cout << "\t\tAdding sigma->start edges" << std::endl;
+        
     /****************** 1: sigma -> starting segment ******************/
     
     for(auto s : d->segments) {
@@ -52,6 +56,8 @@ Graph::Graph(const std::shared_ptr<const Data> d, const Train tr) : d{d}, tr{tr}
             }
         }
     }
+        
+    std::cout << "\t\tAdding end->tau edges" << std::endl;    
         
     /****************** 2: ending segment -> tau ******************/
     
@@ -70,6 +76,8 @@ Graph::Graph(const std::shared_ptr<const Data> d, const Train tr) : d{d}, tr{tr}
         }
     }
         
+    std::cout << "\t\tAdding (s,t)->(s,t+1) edges" << std::endl;
+        
     /****************** 3: (s, t) -> (s, t + 1) ******************/
     
     for(auto s : d->segments) {
@@ -86,6 +94,8 @@ Graph::Graph(const std::shared_ptr<const Data> d, const Train tr) : d{d}, tr{tr}
             }
         }
     }
+    
+    std::cout << "\t\tAdding (s,t)->(s',t+1) edges" << std::endl;
         
     /****************** 4: (s, t) -> (s', t + 1) ******************/
     
@@ -106,6 +116,8 @@ Graph::Graph(const std::shared_ptr<const Data> d, const Train tr) : d{d}, tr{tr}
         }
     }
         
+    std::cout << "\t\tCleaning up" << std::endl;
+        
     /****************** 5: cleanup ******************/
     
     bool clean = false;
@@ -125,7 +137,7 @@ Graph::Graph(const std::shared_ptr<const Data> d, const Train tr) : d{d}, tr{tr}
         }
     }
     
-    std::cout << "Train: " << tr.id << " (" << tr.cl << "), vertices: " << num_vertices(g) << ", edges: " << num_edges(g) << std::endl;
+    std::cout << "\tTrain: " << tr.id << " (" << tr.cl << "), vertices: " << num_vertices(g) << ", edges: " << num_edges(g) << std::endl;
 }
 
 bool Graph::mow(const std::shared_ptr<const Segment> s, const int t) const {

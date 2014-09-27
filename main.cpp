@@ -21,7 +21,10 @@ int main(int argc, char* argv[]) {
     
     std::vector<std::shared_ptr<const Graph>> graphs;
     
+    std::cout << std::endl << "****** MAKING GRAPHS ******" << std::endl << std::endl;
+    
     for(const Train& tr : d->trains) {
+        std::cout << "\tGraph for train " << tr.id << std::endl;
         graphs.push_back(std::make_shared<const Graph>(d, tr));
     }
     
