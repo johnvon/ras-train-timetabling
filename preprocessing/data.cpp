@@ -209,6 +209,8 @@ bool Data::is_main(std::shared_ptr<const Segment> m, std::shared_ptr<const Segme
     
     if(next_to_switch_e == nullptr || next_to_switch_w == nullptr) { throw std::runtime_error("Found less than 2 next_to_switches!"); }
     
+    if(next_to_switch_e->id == next_to_switch_w->id) { return false; } // Short siding
+    
     return (m->extreme_1 == next_to_switch_w->extreme_2 || m->extreme_2 == next_to_switch_e->extreme_1);
 }
 
