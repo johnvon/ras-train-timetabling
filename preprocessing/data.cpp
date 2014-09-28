@@ -150,6 +150,23 @@ void Data::print_stats() const {
 }
 
 bool Data::is_main(std::shared_ptr<const Segment> m, std::shared_ptr<const Segment> s) const {
+    // Supports sidings of 3 types:
+    
+    // LONG
+    // 0===0===0===0===0===0
+    //     \           /
+    //      0=========0
+    
+    // MEDIUM
+    // 0===0===0===0===0
+    //     \       /
+    //      0=====0
+    
+    // SHORT
+    // 0===0===0===0
+    //     \   /
+    //      0=0
+    
     if(s->type != 'S' || (m->type != '0' && m->type != '1' && m->type != '2')) {
         return false;
     }
