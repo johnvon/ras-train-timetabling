@@ -7,7 +7,7 @@
     "speed_switch":     0.25,
     "speed_xover":      0.25,
     
-    "time_intervals":       1440,
+    "time_intervals":       720,
     "want_time_tw_start":   60,
     "want_time_tw_end":     180,
     "schedule_tw_end":      120,
