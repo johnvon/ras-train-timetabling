@@ -1,3 +1,5 @@
+std::cout << "\tColumns d" << std::endl;
+
 for(int i = 0; i < nt; i++) {
     // Variable d^i_s
     

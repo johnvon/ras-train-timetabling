@@ -1,3 +1,5 @@
+std::cout << "\tColumns e" << std::endl;
+
 for(int i = 0; i < nt; i++) {
     if(d->trains[i].schedule_adherence) {
         std::vector<int> segs;

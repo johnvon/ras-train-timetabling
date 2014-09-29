@@ -1,18 +1,18 @@
 vi_t vi1, vi1_end, vi2, vi2_end;
 
+std::cout << "\tColumns x" << std::endl;
+
 for(int i = 0; i < nt; i++) {
     for(std::tie(vi1, vi1_end) = vertices(graphs[i]->g); vi1 != vi1_end; ++vi1) {
         for(std::tie(vi2, vi2_end) = vertices(graphs[i]->g); vi2 != vi2_end; ++vi2) {
             if(edge(*vi1, *vi2, graphs[i]->g).second) {
                 // Variable x^i_{vi1,vi2}
-            
+        
                 const Node& n1 {graphs[i]->g[*vi1]};
                 const Node& n2 {graphs[i]->g[*vi2]};
-                
-                // std::cout << "=> x^" << i << "_{" << n1.str() << "," << n2.str() << "}" << std::endl;
-                            
+                                            
                 double c_d_i {d->general_delay_price.at(d->trains[i].cl)};
-                
+                                
                 double speed2 {0};
                 if(n2.s != nullptr) {
                     if(n2.s->type == '0') {
@@ -35,12 +35,12 @@ for(int i = 0; i < nt; i++) {
                         throw std::runtime_error("Unrecognised segment type!");
                     }
                 }
-                speed2 *= d->trains[i].speed_multi;        
+                speed2 *= d->trains[i].speed_multi;  
+                      
                 double m_s_i2 {0};
-                
                 if(n2.s != nullptr) {
                     m_s_i2 = ceil(n2.s->length / speed2);
-                }
+                }                
                 
                 double speed1 {0};
                 if(n1.s != nullptr) {
@@ -64,9 +64,9 @@ for(int i = 0; i < nt; i++) {
                         throw std::runtime_error("Unrecognised segment type!");
                     }
                 }
-                speed1 *= d->trains[i].speed_multi;        
-                double m_s_i1 {0};
+                speed1 *= d->trains[i].speed_multi;
                 
+                double m_s_i1 {0};
                 if(n1.s != nullptr) {
                     m_s_i1 = ceil(n1.s->length / speed1);
                 }
@@ -77,7 +77,7 @@ for(int i = 0; i < nt; i++) {
                     (n2.s->westbound && d->trains[i].westbound)) {
                     eta_i_n2 = 0;
                 }
-                                            
+                
                 // ********** Obj Function **********
                 int obj_coeff {0};
                 
@@ -161,7 +161,7 @@ for(int i = 0; i < nt; i++) {
                 
                     col += eq_exit_sigma[ii](coeff);
                 }
-                                            
+                
                 // ********** eq_enter_tau **********
                 for(int ii = 0; ii < nt; ii++) {
                     int coeff {0};
@@ -187,13 +187,13 @@ for(int i = 0; i < nt; i++) {
                 
                     col += eq_enter_tau[ii](coeff);
                 }
-                                                            
+                
                 // ********** eq_one_train **********
                 int num_row {0};
                 for(int ss = 0; ss < ns; ss++) {
                     for(int tt = 1; tt <= ti; tt++) {
                         int coeff {0};
-                        
+                                                
                         if(graphs[i]->vertex_for(d->segments[ss], tt).first) {
                             if(n2.s != nullptr && n2.s->id == ss && n2.t == tt) {
                                 bool vi1_in_delta_minus_vi2 {false};
@@ -216,7 +216,7 @@ for(int i = 0; i < nt; i++) {
                         col += eq_one_train[num_row++](coeff);
                     }
                 }
-                                            
+                
                 // ********** eq_flow **********
                 num_row = 0;
                 for(int ii = 0; ii < nt; ii++) {
@@ -266,7 +266,7 @@ for(int i = 0; i < nt; i++) {
                         }
                     }
                 }
-                                                
+                
                 // ********** ensure_sa_visit **********
                 num_row = 0;
                 for(int ii = 0; ii < nt; ii++) {
@@ -296,7 +296,7 @@ for(int i = 0; i < nt; i++) {
                         }
                     }
                 }
-                                                
+                
                 // ********** eq_wt_1 **********
                 for(int ii = 0; ii < nt; ii++) {
                     int coeff {0};
@@ -322,7 +322,7 @@ for(int i = 0; i < nt; i++) {
                     
                     col += eq_wt_1[ii](coeff);
                 }
-                                                
+                
                 // ********** eq_wt_2 **********
                 for(int ii = 0; ii < nt; ii++) {
                     int coeff {0};
@@ -348,7 +348,7 @@ for(int i = 0; i < nt; i++) {
                     
                     col += eq_wt_2[ii](coeff);
                 }
-                                                
+                
                 // ********** eq_sa_delay **********
                 num_row = 0;
                 for(int ii = 0; ii < nt; ii++) {
@@ -380,7 +380,7 @@ for(int i = 0; i < nt; i++) {
                         }
                     }
                 }
-                                                
+                
                 // ********** eq_min_time **********
                 num_row = 0;
                 for(int ii = 0; ii < nt; ii++) {
@@ -541,7 +541,7 @@ for(int i = 0; i < nt; i++) {
                         }
                     }
                 }
-                                
+                
                 // ********** eq_headway2 **********
                 num_row = 0;
                 for(int ii = 0; ii < nt; ii++) {
@@ -595,7 +595,7 @@ for(int i = 0; i < nt; i++) {
                         }
                     }
                 }
-                                
+                
                 // ********** eq_headway3 **********
                 num_row = 0;
                 for(int ii = 0; ii < nt; ii++) {
@@ -649,7 +649,7 @@ for(int i = 0; i < nt; i++) {
                         }
                     }
                 }
-                                
+                
                 // ********** eq_headway4 **********
                 num_row = 0;
                 for(int ii = 0; ii < nt; ii++) {
@@ -703,7 +703,7 @@ for(int i = 0; i < nt; i++) {
                         }
                     }
                 }
-                                
+                
                 // ********** eq_can_take_siding **********
                 num_row = 0;
                 for(int ii = 0; ii < nt; ii++) {
@@ -757,7 +757,7 @@ for(int i = 0; i < nt; i++) {
                         }
                     }
                 }
-                                
+                
                 // ********** eq_heavy_siding **********
                 num_row = 0;
                 for(int ii = 0; ii < nt; ii++) {
@@ -820,7 +820,7 @@ for(int i = 0; i < nt; i++) {
                 IloNumVar v(col, 0.0, 1.0, IloNumVar::Bool, (
                     "x_train_" + std::to_string(i) + "_from_" + n1.str() + "_to_" + n2.str()
                 ).c_str());
-                var_x.add(v);
+                var_x.add(v);                
             }
         }
     }
