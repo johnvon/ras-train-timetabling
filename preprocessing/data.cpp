@@ -94,6 +94,14 @@ void Data::parse() {
         Mow m {extreme_1, extreme_2, start_time, end_time};
         mow.push_back(m);
     }
+    
+    if(segments_number != segments.size()) {
+        std::cerr << "segments_number is " << segments_number << " but I have " << segments.size() << " segments!" << std::endl;
+    }
+    
+    if(trains_number != trains.size()) {
+        std::cerr << "trains_number is " << trains_number << " but I have " << trains.size() << " trains!" << std::endl;
+    }
 }
 
 void Data::print_stats() const {
