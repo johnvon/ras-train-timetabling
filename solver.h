@@ -20,6 +20,7 @@ using cst_matrix_3d = IloArray<cst_matrix_2d>;
 class solver {
     data& d;
     
+    auto real_node(auto s, auto t) const;
 public:
     solver(data& d) : d{d} {};
     

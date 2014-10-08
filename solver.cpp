@@ -4,6 +4,9 @@
 #include <chrono>
 #include <sstream>
 
+auto solver::real_node(auto s, auto t) const {
+    return (s > 0 && s <= d.ns && t > 0 && t <= d.ni);
+}
 void solver::solve() const {
     using namespace std::chrono;
     high_resolution_clock::time_point t_start, t_end;
