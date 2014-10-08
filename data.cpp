@@ -229,6 +229,7 @@ auto data::calculate_auxiliary_data() {
     tr_max_speed = bv<double>(nt, 0);
     min_time_to_arrive_at = int_matrix(nt, ivec(ns + 2, -1));
     max_time_to_leave_from = int_matrix(nt, ivec(ns + 2, -1));
+    min_travel_time = int_matrix(nt, ivec(ns + 2, -1));
         
     for(auto i = 0; i < nt; i++) {
         tr_max_speed[i] = tr_speed_mult[i] * (tr_westbound[i] ? speed_ew : speed_we);
@@ -239,12 +240,35 @@ auto data::calculate_auxiliary_data() {
             
             min_time_to_arrive_at[i][s] = (tr_westbound[i] ? time_from_e : time_from_w) + tr_entry_time[i];
             max_time_to_leave_from[i][s] = (tr_westbound[i] ? (ni - time_from_w) : (ni - time_from_e));
+            
+            auto speed = 0.0;
+            if(seg_type[s] == '0' || seg_type[s] == '1' || seg_type[s] == '2') {
+                if(tr_westbound[i]) {
+                    speed = speed_ew;
+                } else {
+                    speed = speed_we;
+                }
+            } else if(seg_type[s] == 'S') {
+                speed = speed_siding;
+            } else if(seg_type[s] == 'T') {
+                speed = speed_switch;
+            } else if(seg_type[s] == 'X') {
+                speed = speed_xover;
+            }
+            
+            speed *= tr_speed_mult[i];
+            
+            min_travel_time[i][s] = std::ceil(seg_length[s] / speed);
         }
     }
 }
 
 auto data::calculate_vertices() {
     v = vertices_map(nt, indicator_matrix(ns + 2, bvec(ni + 2, false)));
+    v_for_someone = indicator_matrix(ns + 2, bvec(ni + 2, false));
+    
+    v_for_someone[0][0] = true;
+    v_for_someone[ns+1][ni+1] = true;
     
     for(auto i = 0; i < nt; i++) {        
         v[i][0][0] = true;
@@ -261,6 +285,7 @@ auto data::calculate_vertices() {
                 }
                 
                 v[i][s][t] = true;
+                v_for_someone[s][t] = true;
             }
         }
     }
@@ -268,11 +293,16 @@ auto data::calculate_vertices() {
 
 auto data::calculate_accessible() {
     accessible = indicator_matrix(nt, bvec(ns + 2, false));
+    accessible_by_someone = bvec(ns + 2, false);
+    
     for(auto i = 0; i < nt; i++) {
         accessible[i][0] = true;
         accessible[i][ns + 1] = true;
         for(auto s = 1; s < ns + 1; s++) {
-            accessible[i][s] = (boost::count(v[i][s], true) > 0);
+            if(boost::count(v[i][s], true) > 0) {
+                accessible[i][s] = true;
+                accessible_by_someone[s] = true;
+            }
         }
     }
 }
@@ -325,7 +355,10 @@ auto data::generate_movement_arcs() {
     for(auto i = 0; i < nt; i++) {
         for(auto s1 = 1; s1 < ns + 1; s1++) {
             for(auto s2 = 1; s2 < ns + 1; s2++) {
-                if(network[s1][s2]) {
+                if(network[s1][s2] && (
+                    (tr_eastbound[i] && seg_e_ext[s1] == seg_w_ext[s2]) ||
+                    (tr_westbound[i] && seg_w_ext[s1] == seg_e_ext[s2])
+                )) {
                     for(auto t = min_time_to_arrive_at[i][s1]; t <= max_time_to_leave_from[i][s1]; t++) {
                         if(t + 1 >= min_time_to_arrive_at[i][s2] && t + 1 <= max_time_to_leave_from[i][s2] && t + 1 <= ni && v[i][s1][t] && v[i][s2][t + 1]) {
                             adj[i][s1][t][s2][t + 1] = true;

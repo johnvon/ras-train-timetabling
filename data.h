@@ -75,14 +75,14 @@ struct data {
                         mow_start_times, // Mow start times
                         mow_end_times; // Mow end times
 
-    bv<double>         seg_e_min_dist, // Min distance from east terminal to segment
+    bv<double>          seg_e_min_dist, // Min distance from east terminal to segment
                         seg_w_min_dist, // Min distance from west terminal to segment
                         seg_length, // Length of segment
                         tr_speed_mult, // Train's speed multiplier
                         tr_length, // Train's length
                         tr_max_speed; // Max speed of a train on the tracks
 
-    bv<char>           seg_type, // Segment type ('0', '1', '2', 'S', 'T', 'X', 'D') - 'D' used for sigma, tau
+    bv<char>            seg_type, // Segment type ('0', '1', '2', 'S', 'T', 'X', 'D') - 'D' used for sigma, tau
                         tr_class; // Train class ('A', 'B', 'C', 'D', 'E', 'F')
 
     bvec                seg_eastbound, // Is the segment's preferred direction eastbound?
@@ -91,13 +91,15 @@ struct data {
                         tr_eastbound, // Is the train eastbound?
                         tr_westbound, // Is the train westbound?
                         tr_heavy, // Is the train heavy?
-                        tr_hazmat; // Is the train hazmat?
+                        tr_hazmat, // Is the train hazmat?
+                        accessible_by_someone; // Is there at least one train s.t. accessible(train, segment) == true?
 
     indicator_matrix    accessible, // ((train, segment) => bool) is true if <train> can access <segment>
                         sa, // ((train, segment) => bool) is true if <segment> is a SA point for <train>
                         mow, // ((segment, time) => bool) is true if there is a mow at <segment> at time <time>
                         is_main, // ((segment1, segment2) => bool) is true if <segment1> is siding and <segment2> is its main
-                        network; // ((segment1, segment2) => bool) is true if <segment1> and <segment2> are connected
+                        network, // ((segment1, segment2) => bool) is true if <segment1> and <segment2> are connected
+                        v_for_someone; // ((segment, train) => bool) is true if there is at least one train s.t. v(train, segment, time) == true
 
     int_matrix          tr_orig_seg, // Train's origin segment(s)
                         tr_dest_seg, // Train's destination segment(s)
@@ -105,7 +107,8 @@ struct data {
                         sa_ext, // (train => (ext1, ...)) is the raw list of SA points for <train>
                         sa_ext_times, // (train => (ti1, ...)) is the raw list of times for <train>'s SA
                         min_time_to_arrive_at, // ((train, segment) => time) minimum time to reach <segment> from the origin terminal
-                        max_time_to_leave_from; // ((train, segment) => time) maximum time to leave <segment> to the destination terminal
+                        max_time_to_leave_from, // ((train, segment) => time) maximum time to leave <segment> to the destination terminal
+                        min_travel_time; // ((train, segment) => time) minimum travel time on <segment> for <train>
                         
     vertices_map        v; // ((train, segment, time) => bool) is true if vertex (<train>, <segment>) is in <train>'s graph
     
