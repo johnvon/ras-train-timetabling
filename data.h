@@ -25,6 +25,12 @@ using int_matrix_4d = bv<int_matrix_3d>;
 using int_matrix_5d = bv<int_matrix_4d>;
 using vertex_count_matrix = int_matrix_3d;
 
+using dvec = bv<double>;
+using double_matrix = bv<dvec>;
+using double_matrix_3d = bv<double_matrix>;
+using double_matrix_4d = bv<double_matrix_3d>;
+using double_matrix_5d = bv<double_matrix_4d>;
+
 using delay_price_map = std::unordered_map<char, double>;
 
 /*
@@ -57,7 +63,7 @@ struct data {
                         wt_tw_right, // Penalised if arriving at terminal with more than this delay
                         sa_tw_right; // Penalised if arriving at SA point with more than this delay
 
-    delay_price_map     delay_price; // Map (segment type => unit price) of the penality to pay when not running at max speed
+    delay_price_map     delay_price; // Map (train type => unit price) of the penality to pay when not running at max speed
 
     double              wt_price, // Unit price for advance/delay at terminal
                         sa_price, // Unit price for delay at SA point
@@ -75,7 +81,7 @@ struct data {
                         mow_start_times, // Mow start times
                         mow_end_times; // Mow end times
 
-    bv<double>          seg_e_min_dist, // Min distance from east terminal to segment
+    dvec                seg_e_min_dist, // Min distance from east terminal to segment
                         seg_w_min_dist, // Min distance from west terminal to segment
                         seg_length, // Length of segment
                         tr_speed_mult, // Train's speed multiplier
