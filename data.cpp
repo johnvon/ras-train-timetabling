@@ -73,14 +73,14 @@ auto data::read_segments(const ptree& pt) {
     seg_eastbound.push_back(false);
     seg_westbound.push_back(false);
     
-    assert(seg_w_ext.size() == ns + 2);
-    assert(seg_e_ext.size() == ns + 2);
-    assert(seg_w_min_dist.size() == ns + 2);
-    assert(seg_e_min_dist.size() == ns + 2);
-    assert(seg_type.size() == ns + 2);
-    assert(seg_length.size() == ns + 2);
-    assert(seg_eastbound.size() == ns + 2);
-    assert(seg_westbound.size() == ns + 2);
+    assert((int)seg_w_ext.size() == ns + 2);
+    assert((int)seg_e_ext.size() == ns + 2);
+    assert((int)seg_w_min_dist.size() == ns + 2);
+    assert((int)seg_e_min_dist.size() == ns + 2);
+    assert((int)seg_type.size() == ns + 2);
+    assert((int)seg_length.size() == ns + 2);
+    assert((int)seg_eastbound.size() == ns + 2);
+    assert((int)seg_westbound.size() == ns + 2);
 }
 
 auto data::read_trains(const ptree& pt) {
@@ -109,20 +109,20 @@ auto data::read_trains(const ptree& pt) {
         }
     }
     
-    assert(tr_class.size() == nt);
-    assert(tr_sa.size() == nt);
-    assert(tr_entry_time.size() == nt);
-    assert(tr_orig_ext.size() == nt);
-    assert(tr_dest_ext.size() == nt);
-    assert(tr_eastbound.size() == nt);
-    assert(tr_westbound.size() == nt);
-    assert(tr_speed_mult.size() == nt);
-    assert(tr_length.size() == nt);
-    assert(tr_tob.size() == nt);
-    assert(tr_hazmat.size() == nt);
-    assert(tr_wt.size() == nt);
-    assert(sa_ext.size() == nt);
-    assert(sa_ext_times.size() == nt);
+    assert((int)tr_class.size() == nt);
+    assert((int)tr_sa.size() == nt);
+    assert((int)tr_entry_time.size() == nt);
+    assert((int)tr_orig_ext.size() == nt);
+    assert((int)tr_dest_ext.size() == nt);
+    assert((int)tr_eastbound.size() == nt);
+    assert((int)tr_westbound.size() == nt);
+    assert((int)tr_speed_mult.size() == nt);
+    assert((int)tr_length.size() == nt);
+    assert((int)tr_tob.size() == nt);
+    assert((int)tr_hazmat.size() == nt);
+    assert((int)tr_wt.size() == nt);
+    assert((int)sa_ext.size() == nt);
+    assert((int)sa_ext_times.size() == nt);
 }
 
 auto data::read_mows(const ptree& pt) {
@@ -179,8 +179,8 @@ auto data::calculate_mows() {
 }
 
 auto data::calculate_schedules() {
-    assert(sa_ext.size() == nt);
-    assert(sa_ext_times.size() == nt);
+    assert((int)sa_ext.size() == nt);
+    assert((int)sa_ext_times.size() == nt);
     
     sa = indicator_matrix(nt, bvec(ns + 2, false));
     sa_times = int_matrix(nt, ivec(ns + 2, -1));
