@@ -166,7 +166,7 @@ auto data::calculate_mows() {
     assert(mow_start_times.size() == mow_end_times.size());
     assert(mow_ext_e.size() == mow_start_times.size());
         
-    for(auto m = 0; m < mow_ext_e.size(); m++) {
+    for(auto m = 0u; m < mow_ext_e.size(); m++) {
         for(auto s = 0; s < ns + 2; s++) {
             if(seg_e_ext[s] == mow_ext_e[m]) {
                 assert(seg_w_ext[s] == mow_ext_w[m]);
@@ -191,7 +191,7 @@ auto data::calculate_schedules() {
             assert(sa_ext_times[i].size() == 0);
         } else {
             assert(sa_ext[i].size() == sa_ext_times[i].size());
-            for(auto m = 0; m < sa_ext[i].size(); m++) {
+            for(auto m = 0u; m < sa_ext[i].size(); m++) {
                 for(auto s = 0; s < ns + 2; s++) {
                     if( (tr_westbound[i] && seg_w_ext[s] == sa_ext[i][m]) ||
                         (tr_eastbound[i] && seg_e_ext[s] == sa_ext[i][m])
@@ -201,7 +201,7 @@ auto data::calculate_schedules() {
                     }
                 }
             }
-            assert(boost::count(sa[i], true) == sa_ext[i].size());
+            assert(boost::count(sa[i], true) == (int)sa_ext[i].size());
         }
     }
 }

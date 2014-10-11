@@ -422,7 +422,7 @@ void solver::solve() const {
                                             if(s2 != s1) {
                                                 coeff[i][s2][t2][s1][t1] -= d.delay_price[d.tr_class[i]] * (t1 + d.min_travel_time[i][s1] - 1);
                                             }
-                                            auto eta = (d.tr_westbound[i] && !d.seg_westbound[s1] || d.tr_eastbound[i] && !d.seg_eastbound[s1]);
+                                            auto eta = ((d.tr_westbound[i] && !d.seg_westbound[s1]) || (d.tr_eastbound[i] && !d.seg_eastbound[s1]));
                                             if(eta) {
                                                 coeff[i][s2][t2][s1][t1] += d.unpreferred_price;
                                             }
