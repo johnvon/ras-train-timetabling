@@ -439,7 +439,6 @@ void solver::solve() const {
             }
         }
     }
-    
         
     for(auto i = 0; i < d.nt; i++) {
         for(auto s1 = 0; s1 < d.ns + 2; s1++) {
@@ -474,7 +473,42 @@ void solver::solve() const {
     
     cplex.exportModel("model.lp");
     
-    cplex.solve();
+    if(!cplex.solve()) {
+        std::cout << "Cplex status: " << cplex.getStatus() << " " << cplex.getCplexStatus() << std::endl;
+        return;
+    }
+    
+    std::cout << "Cplex optimal value: " << cplex.getObjValue() << std::endl;
+    
+    for(auto i = 0; i < d.nt; i++) {
+        auto dv = cplex.getValue(var_d[i]);
+        if(dv > eps) {
+            std::cout << "d[" << i << "]: " << dv << std::endl;
+        }
+        for(auto s1 = 0; s1 < d.ns + 2; s1++) {
+            if(d.accessible[i][s1]) {
+                if(d.sa[i][s1]) {
+                    std::cout << "e[" << i << "][" << s1 << "]: " << cplex.getValue(var_e[i][s1]) << std::endl;
+                }
+                for(auto t1 = 0; t1 < d.ni + 2; t1++) {
+                    if(d.v[i][s1][t1]) {
+                        for(auto s2 = 0; s2 < d.ns + 2; s2++) {
+                            if(d.accessible[i][s2]) {
+                                for(auto t2 = 0; t2 < d.ni + 2; t2++) {
+                                    if(d.v[i][s2][t2] && d.adj[i][s1][t1][s2][t2]) {
+                                        auto xv = cplex.getValue(var_x[i][s1][t1][s2][t2]);
+                                        if(xv > eps) {
+                                            std::cout << "x[" << i << "][" << s1 << "][" << t1 << "][" << s2 << "][" << t2 << "]: " << xv << std::endl;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
     
     env.end();
 }
