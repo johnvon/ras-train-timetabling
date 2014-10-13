@@ -168,8 +168,7 @@ auto data::calculate_mows() {
         
     for(auto m = 0u; m < mow_ext_e.size(); m++) {
         for(auto s = 0; s < ns + 2; s++) {
-            if(seg_e_ext[s] == mow_ext_e[m]) {
-                assert(seg_w_ext[s] == mow_ext_w[m]);
+            if(seg_e_ext[s] == mow_ext_e[m] && seg_w_ext[s] == mow_ext_w[m]) {
                 for(auto t = mow_start_times[m]; t <= mow_end_times[m]; t++) {
                     mow[s][t] = true;
                 }
@@ -259,6 +258,64 @@ auto data::calculate_auxiliary_data() {
             speed *= tr_speed_mult[i];
             
             min_travel_time[i][s] = std::ceil(seg_length[s] / speed);
+        }
+    }
+    
+    is_main = indicator_matrix(ns + 2, bvec(ns + 2, false));
+    
+    // The following algorithm supports sidings with 1, 2 or 3 corresponding main segments
+    
+    for(auto s = 1; s < ns + 1; s++) {
+        if(seg_type[s] == 'S') {
+            for(auto m = 1; m < ns + 1; m++) {
+                if(seg_type[m] == '0' || seg_type[m] == '1' || seg_type[m] == '2') {
+                    auto switch_e = -1, switch_w = -1;
+                    
+                    for(auto ss = 1; ss < ns + 1; ss++) {
+                        if(seg_type[ss] == 'T') {
+                            if(seg_w_ext[ss] == seg_e_ext[s]) {
+                                switch_e = ss;
+                            }
+                            if(seg_e_ext[ss] == seg_w_ext[s]) {
+                                switch_w = ss;
+                            }
+                        }
+                    }
+                    
+                    assert(switch_e != -1);
+                    assert(switch_w != -1);
+                    
+                    auto next_to_switch_e = -1, next_to_switch_w = -1;
+                    
+                    for(auto ss = 1; ss < ns + 1; ss++) {
+                        if(seg_type[ss] == '0' || seg_type[ss] == '1' || seg_type[ss] == '2') {
+                            if(seg_w_ext[ss] == seg_w_ext[switch_w]) {
+                                if(ss == m) {
+                                    is_main[s][m] = true;
+                                } else {
+                                    next_to_switch_w = ss;
+                                }
+                            }
+                            if(seg_w_ext[ss] == seg_e_ext[switch_e]) {
+                                if(ss == m) {
+                                    is_main[s][m] = true;
+                                } else {
+                                    next_to_switch_e = ss;
+                                }
+                            }
+                        }
+                    }
+                    
+                    if(is_main[s][m]) {
+                        break;
+                    } else {
+                        assert(next_to_switch_e != -1);
+                        assert(next_to_switch_w != -1);
+                        
+                        is_main[s][m] = (seg_w_ext[m] == seg_e_ext[next_to_switch_w] || seg_e_ext[m] == seg_w_ext[next_to_switch_e]);
+                    }
+                }
+            }
         }
     }
 }
