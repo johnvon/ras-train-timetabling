@@ -399,14 +399,17 @@ void solver::solve() const {
     t_start = high_resolution_clock::now();
     
     double_matrix_5d coeff(d.nt, double_matrix_4d(d.ns + 2, double_matrix_3d(d.ni + 2, double_matrix(d.ns + 2, dvec(d.ni + 2, 0.0)))));
+    IloRange positive_obj(env, 0, IloInfinity, "positive_obj");
     
     for(auto i = 0; i < d.nt; i++) {
         obj.setLinearCoef(var_d[i], d.wt_price);
+        positive_obj.setLinearCoef(var_d[i], d.wt_price);
         
         for(auto s1 = 0; s1 < d.ns + 2; s1++) {
             if(s1 >= 1 && s1 <= d.ns && d.accessible[i][s1]) {
                 if(d.tr_sa[i] && d.sa[i][s1]) {
                     obj.setLinearCoef(var_e[i][s1], d.sa_price);
+                    positive_obj.setLinearCoef(var_e[i][s1], d.sa_price);
                 }
                 
                 for(auto t1 = 0; t1 < d.ni + 2; t1++) {
@@ -437,6 +440,7 @@ void solver::solve() const {
         }
     }
     
+        
     for(auto i = 0; i < d.nt; i++) {
         for(auto s1 = 0; s1 < d.ns + 2; s1++) {
             if(d.accessible[i][s1]) {
@@ -445,8 +449,9 @@ void solver::solve() const {
                         for(auto s2 = 0; s2 < d.ns + 2; s2++) {
                             if(d.accessible[i][s2]) {
                                 for(auto t2 = 0; t2 < d.ni + 2; t2++) {
-                                    if(d.v[i][s2][t2] && d.adj[i][s1][t1][s2][t2] && coeff[i][s1][t1][s2][t2] > eps) {
+                                    if(d.v[i][s2][t2] && d.adj[i][s1][t1][s2][t2] && std::abs(coeff[i][s1][t1][s2][t2]) > eps) {
                                         obj.setLinearCoef(var_x[i][s1][t1][s2][t2], coeff[i][s1][t1][s2][t2]);
+                                        positive_obj.setLinearCoef(var_x[i][s1][t1][s2][t2], coeff[i][s1][t1][s2][t2]);
                                     }
                                 }
                             }
@@ -458,6 +463,7 @@ void solver::solve() const {
     }
     
     model.add(obj);
+    model.add(positive_obj);
     
     t_end = high_resolution_clock::now();
     time_span = duration_cast<duration<double>>(t_end - t_start);
