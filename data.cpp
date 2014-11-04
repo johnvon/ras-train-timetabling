@@ -395,7 +395,11 @@ auto data::generate_s_tau_arcs() {
 auto data::generate_stop_arcs() {
     for(auto i = 0; i < nt; i++) {
         for(auto s = 1; s < ns + 1; s++) {
-            if(seg_type[s] != 'X' && seg_type[s] != 'T' && seg_length[s] >= tr_length[i]) {
+            // "Can't stop on xover or switch" must be imposed as a constraint and can't be
+            // imposed by not createing stop arcs, because some x-overs are long 0.3 and
+            // the train's max speed is 0.25 => it must take 2 time intervals to travel them
+            
+            // if(seg_type[s] != 'X' && seg_type[s] != 'T' && seg_length[s] >= tr_length[i]) {
                 for(auto t = min_time_to_arrive_at[i][s]; t <= max_time_to_leave_from[i][s]; t++) {
                     if(t + 1 <= ni && v[i][s][t] && v[i][s][t + 1]) {
                         adj[i][s][t][s][t + 1] = true;
@@ -403,7 +407,7 @@ auto data::generate_stop_arcs() {
                         n_in[i][s][t + 1]++;
                     }
                 }
-            }
+            // }
         }
     }
 }
