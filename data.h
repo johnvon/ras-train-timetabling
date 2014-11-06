@@ -53,7 +53,8 @@ struct data {
                         speed_we, // Maximum speed West -> East
                         speed_siding, // Maximum speed in sidings
                         speed_switch, // Maximum speed in switches
-                        speed_xover; // Maximum speed in cross-overs
+                        speed_xover, // Maximum speed in cross-overs
+                        total_cost_ub; // Upped bound on the total cost of the solution
 
     int                 nt, // Number of trains
                         ns, // Number of segments
@@ -84,6 +85,7 @@ struct data {
     dvec                seg_e_min_dist, // Min distance from east terminal to segment
                         seg_w_min_dist, // Min distance from west terminal to segment
                         seg_length, // Length of segment
+                        seg_siding_length, // "Real" length of a siding (i.e. wthout the switch)
                         tr_speed_mult, // Train's speed multiplier
                         tr_length, // Train's length
                         tr_max_speed; // Max speed of a train on the tracks

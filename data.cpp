@@ -46,6 +46,7 @@ auto data::read_segments(const ptree& pt) {
     seg_e_min_dist.push_back(-1000);
     seg_type.push_back('D');
     seg_length.push_back(-1);
+    seg_siding_length.push_back(-1);
     seg_eastbound.push_back(false);
     seg_westbound.push_back(false);
     
@@ -58,6 +59,11 @@ auto data::read_segments(const ptree& pt) {
         
         seg_type.push_back(segment_child.second.get<char>("type"));
         seg_length.push_back(segment_child.second.get<double>("length"));
+        if(seg_type.back() == 'S') {
+            seg_siding_length.push_back(segment_child.second.get<double>("siding_length"));
+        } else {
+            seg_siding_length.push_back(-1);
+        }
         
         seg_eastbound.push_back(segment_child.second.get<bool>("eastbound"));
         seg_westbound.push_back(segment_child.second.get<bool>("westbound"));
@@ -70,6 +76,7 @@ auto data::read_segments(const ptree& pt) {
     seg_e_min_dist.push_back(-1000);
     seg_type.push_back('D');
     seg_length.push_back(-1);
+    seg_siding_length.push_back(-1);
     seg_eastbound.push_back(false);
     seg_westbound.push_back(false);
     
@@ -79,6 +86,7 @@ auto data::read_segments(const ptree& pt) {
     assert((int)seg_e_min_dist.size() == ns + 2);
     assert((int)seg_type.size() == ns + 2);
     assert((int)seg_length.size() == ns + 2);
+    assert((int)seg_siding_length.size() == ns + 2);
     assert((int)seg_eastbound.size() == ns + 2);
     assert((int)seg_westbound.size() == ns + 2);
 }
@@ -241,6 +249,7 @@ auto data::calculate_auxiliary_data() {
             max_time_to_leave_from[i][s] = (tr_westbound[i] ? (ni - time_from_w) : (ni - time_from_e));
             
             auto speed = 0.0;
+            auto speed_aux = 0.0;
             if(seg_type[s] == '0' || seg_type[s] == '1' || seg_type[s] == '2') {
                 if(tr_westbound[i]) {
                     speed = speed_ew;
@@ -249,73 +258,32 @@ auto data::calculate_auxiliary_data() {
                 }
             } else if(seg_type[s] == 'S') {
                 speed = speed_siding;
-            } else if(seg_type[s] == 'T') {
-                speed = speed_switch;
+                speed_aux = speed_switch;
             } else if(seg_type[s] == 'X') {
                 speed = speed_xover;
             }
             
             speed *= tr_speed_mult[i];
+            speed_aux *= tr_speed_mult[i];
             
-            min_travel_time[i][s] = std::ceil(seg_length[s] / speed);
+            if(seg_type[s] != 'S') {
+                min_travel_time[i][s] = std::ceil(seg_length[s] / speed);
+            } else {
+                min_travel_time[i][s] = std::ceil(seg_siding_length[s] / speed) +
+                                        std::ceil((seg_length[s] - seg_siding_length[s]) / speed_aux);
+            }
         }
     }
     
     is_main = indicator_matrix(ns + 2, bvec(ns + 2, false));
-    
-    // The following algorithm supports sidings with 1, 2 or 3 corresponding main segments
-    
+        
     for(auto s = 1; s < ns + 1; s++) {
-        if(seg_type[s] == 'S') {
-            for(auto m = 1; m < ns + 1; m++) {
-                if(seg_type[m] == '0' || seg_type[m] == '1' || seg_type[m] == '2') {
-                    auto switch_e = -1, switch_w = -1;
-                    
-                    for(auto ss = 1; ss < ns + 1; ss++) {
-                        if(seg_type[ss] == 'T') {
-                            if(seg_w_ext[ss] == seg_e_ext[s]) {
-                                switch_e = ss;
-                            }
-                            if(seg_e_ext[ss] == seg_w_ext[s]) {
-                                switch_w = ss;
-                            }
-                        }
-                    }
-                    
-                    assert(switch_e != -1);
-                    assert(switch_w != -1);
-                    
-                    auto next_to_switch_e = -1, next_to_switch_w = -1;
-                    
-                    for(auto ss = 1; ss < ns + 1; ss++) {
-                        if(seg_type[ss] == '0' || seg_type[ss] == '1' || seg_type[ss] == '2') {
-                            if(seg_w_ext[ss] == seg_w_ext[switch_w]) {
-                                if(ss == m) {
-                                    is_main[s][m] = true;
-                                } else {
-                                    next_to_switch_w = ss;
-                                }
-                            }
-                            if(seg_w_ext[ss] == seg_e_ext[switch_e]) {
-                                if(ss == m) {
-                                    is_main[s][m] = true;
-                                } else {
-                                    next_to_switch_e = ss;
-                                }
-                            }
-                        }
-                    }
-                    
-                    if(is_main[s][m]) {
-                        break;
-                    } else {
-                        assert(next_to_switch_e != -1);
-                        assert(next_to_switch_w != -1);
-                        
-                        is_main[s][m] = (seg_w_ext[m] == seg_e_ext[next_to_switch_w] || seg_e_ext[m] == seg_w_ext[next_to_switch_e]);
-                    }
-                }
-            }
+        for(auto m = 1; m < ns + 1; m++) {
+            is_main[s][m] = (
+                seg_type[s] == 'S' &&
+                (seg_type[m] == '0' || seg_type[m] == '1' || seg_type[m] == '2') &&
+                (seg_e_ext[s] == seg_e_ext[m] || seg_w_ext[s] == seg_w_ext[m])
+            );
         }
     }
 }
@@ -332,7 +300,7 @@ auto data::calculate_vertices() {
         v[i][ns+1][ni+1] = true;
         
         for(auto s = 1; s < ns + 1; s++) {
-            if(tr_hazmat[i] && (seg_type[s] == 'S' || seg_type[s] == 'T')) {
+            if(tr_hazmat[i] && seg_type[s] == 'S') {
                 continue;
             }
             
@@ -383,6 +351,20 @@ auto data::generate_s_tau_arcs() {
         for(auto s : tr_dest_seg[i]) {
             for(auto t = min_time_to_arrive_at[i][s]; t <= max_time_to_leave_from[i][s]; t++) {
                 if(v[i][s][t]) {
+                    if(
+                        (t < tr_wt[i] - wt_tw_left) &&
+                        (wt_price * (tr_wt[i] - wt_tw_left - t) > total_cost_ub)
+                    ) {
+                        continue;
+                    }
+                    
+                    if(
+                        (t > tr_wt[i] + wt_tw_right) &&
+                        (wt_price * (t - tr_wt[i] + wt_tw_right) > total_cost_ub)
+                    ) {
+                        continue;
+                    }
+
                     adj[i][s][t][ns + 1][ni + 1] = true;
                     n_out[i][s][t]++;
                     n_in[i][ns + 1][ni + 1]++;
@@ -399,9 +381,13 @@ auto data::generate_stop_arcs() {
             // imposed by not createing stop arcs, because some x-overs are long 0.3 and
             // the train's max speed is 0.25 => it must take 2 time intervals to travel them
             
-            // if(seg_type[s] != 'X' && seg_type[s] != 'T' && seg_length[s] >= tr_length[i]) {
+            // if(seg_type[s] != 'X' && seg_siding_length[s] >= tr_length[i]) {
                 for(auto t = min_time_to_arrive_at[i][s]; t <= max_time_to_leave_from[i][s]; t++) {
                     if(t + 1 <= ni && v[i][s][t] && v[i][s][t + 1]) {
+                        if(tr_sa[i] && sa[i][s] && t+1 > sa_times[i][s] + sa_tw_right && sa_price * (t+1 - (sa_times[i][s] + sa_tw_right)) > total_cost_ub) {
+                            continue;
+                        }
+                        
                         adj[i][s][t][s][t + 1] = true;
                         n_out[i][s][t]++;
                         n_in[i][s][t + 1]++;
@@ -422,6 +408,14 @@ auto data::generate_movement_arcs() {
                 )) {
                     for(auto t = min_time_to_arrive_at[i][s1]; t <= max_time_to_leave_from[i][s1]; t++) {
                         if(t + 1 >= min_time_to_arrive_at[i][s2] && t + 1 <= max_time_to_leave_from[i][s2] && t + 1 <= ni && v[i][s1][t] && v[i][s2][t + 1]) {
+                            if(tr_sa[i] && sa[i][s1] && t > sa_times[i][s1] + sa_tw_right && sa_price * (t - (sa_times[i][s1] + sa_tw_right)) > total_cost_ub) {
+                                continue;
+                            }
+
+                            if(tr_sa[i] && sa[i][s2] && t+1 > sa_times[i][s2] + sa_tw_right && sa_price * (t+1 - (sa_times[i][s2] + sa_tw_right)) > total_cost_ub) {
+                                continue;
+                            }
+                            
                             adj[i][s1][t][s2][t + 1] = true;
                             n_out[i][s1][t]++;
                             n_in[i][s2][t + 1]++;
@@ -516,6 +510,7 @@ data::data(const std::string& file_name) : file_name{file_name} {
     nt = pt.get<int>("trains_number");
     ns = pt.get<int>("segments_number");
     ni = pt.get<int>("time_intervals");
+    total_cost_ub = pt.get<double>("total_cost_ub");
     
     read_speeds(pt);
     read_relevant_times(pt);
