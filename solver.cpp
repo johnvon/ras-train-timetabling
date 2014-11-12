@@ -9,7 +9,7 @@ auto solver::real_node(auto s, auto t) const {
 }
 
 
-void solver::solve() const {
+void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const {
     using namespace std::chrono;
     high_resolution_clock::time_point t_start, t_end;
     duration<double> time_span;
@@ -82,7 +82,8 @@ void solver::solve() const {
     cst_vector cst_wt_delay_1(env, d.nt);
     cst_vector cst_wt_delay_2(env, d.nt);
     cst_matrix_2d cst_sa_delay(env, d.nt);
-    cst_matrix_3d cst_min_travel_time(env, d.nt);
+    cst_matrix_3d cst_min_travel_time(env, d.nt); // This is also used to respect the known UB on the solution value
+    cst_matrix_2d cst_alt_min_travel_time(env, d.nt); // Alternative formulation
     cst_matrix_3d cst_headway_1(env, d.nt);
     cst_matrix_3d cst_headway_2(env, d.nt);
     cst_matrix_3d cst_headway_3(env, d.nt);
@@ -95,6 +96,7 @@ void solver::solve() const {
     t_start = high_resolution_clock::now();
 
     for(auto i = 0; i < d.nt; i++) {
+        std::cout << "\tTrain: #" << i << std::endl;
         name.str(""); name << "cst_exit_sigma_" << i;
         cst_exit_sigma[i] = IloRange(env, 1.0, 1.0, name.str().c_str());
         
@@ -108,7 +110,11 @@ void solver::solve() const {
             cst_sa_delay[i] = cst_vector(env, d.ns + 2);
         }
         
-        cst_min_travel_time[i] = cst_matrix_2d(env, d.ns + 2);
+        if(use_alt_min_travel_time) {
+            cst_alt_min_travel_time[i] = cst_vector(env, d.ns + 2);
+        } else {
+            cst_min_travel_time[i] = cst_matrix_2d(env, d.ns + 2);
+        }
         
         cst_headway_1[i] = cst_matrix_2d(env, d.ns + 2);
         cst_headway_2[i] = cst_matrix_2d(env, d.ns + 2);
@@ -135,7 +141,8 @@ void solver::solve() const {
         
         cst_wt_delay_2[i].setLinearCoef(var_d[i], -1.0);
         
-        for(auto s1 = 0; s1 < d.ns + 2; s1++) {            
+        for(auto s1 = 0; s1 < d.ns + 2; s1++) {
+            std::cout << "\t\tSegment #" << s1 << std::endl;         
             if(s1 > 0 && s1 <= d.ns) {
                 if(i == 0) {
                     // Here we initialise constraints that don't have "for all i"
@@ -146,14 +153,19 @@ void solver::solve() const {
                 
                 cst_flow[i][s1] = cst_vector(env, d.ni + 2);
                 
-                cst_min_travel_time[i][s1] = cst_vector(env, d.ni + 2);
+                if(use_alt_min_travel_time) {
+                    name.str(""); name << "cst_alt_min_travel_time_" << i << "_" << s1;
+                    cst_alt_min_travel_time[i][s1] = IloRange(env, -IloInfinity, 0, name.str().c_str());
+                } else {
+                    cst_min_travel_time[i][s1] = cst_vector(env, d.ni + 2);
+                }
                 
                 cst_headway_1[i][s1] = cst_vector(env, d.ni + 2);
                 cst_headway_2[i][s1] = cst_vector(env, d.ni + 2);
                 cst_headway_3[i][s1] = cst_vector(env, d.ni + 2);
                 cst_headway_4[i][s1] = cst_vector(env, d.ni + 2);
                 
-                if(d.seg_type[s1] == 'X' || d.seg_type[s1] == 'T') {
+                if(d.seg_type[s1] == 'X') {
                     cst_cant_stop[i][s1] = cst_vector(env, d.ni + 2);
                 }
                 
@@ -189,8 +201,10 @@ void solver::solve() const {
                             name.str(""); name << "cst_flow_" << i << "_" << s1 << "_" << t1;
                             cst_flow[i][s1][t1] = IloRange(env, 0.0, 0.0, name.str().c_str());
                             
-                            name.str(""); name << "cst_min_travel_time_" << i << "_" << s1 << "_" << t1;
-                            cst_min_travel_time[i][s1][t1] = IloRange(env, -IloInfinity, 1.0, name.str().c_str());
+                            if(!use_alt_min_travel_time) {
+                                name.str(""); name << "cst_min_travel_time_" << i << "_" << s1 << "_" << t1;
+                                cst_min_travel_time[i][s1][t1] = IloRange(env, -IloInfinity, 1.0, name.str().c_str());
+                            }
                             
                             name.str(""); name << "cst_headway_1_" << i << "_" << s1 << "_" << t1;
                             cst_headway_1[i][s1][t1] = IloRange(env, -IloInfinity, 1.0, name.str().c_str());
@@ -224,7 +238,7 @@ void solver::solve() const {
                                 }
                             }
                             
-                            if(d.seg_type[s1] == 'X' || d.seg_type[s1] == 'T') {
+                            if(d.seg_type[s1] == 'X') {
                                 name.str(""); name << "cst_cant_stop_" << i << "_" << s1 << "_" << t1;
                                 cst_cant_stop[i][s1][t1] = IloRange(env, -IloInfinity, 1.0, name.str().c_str());
                             }
@@ -239,6 +253,12 @@ void solver::solve() const {
                                                 if(s2 != s1) {
                                                     cst_headway_3[i][s1][t1].setLinearCoef(var_x[i][s1][t1][s2][t2], 1.0);
                                                     cst_headway_4[i][s1][t1].setLinearCoef(var_x[i][s1][t1][s2][t2], 1.0);
+                                                } else {
+                                                    if(t2 == t1 + 1) {
+                                                        if(use_alt_min_travel_time) {
+                                                            cst_alt_min_travel_time[i][s1].setLinearCoef(var_x[i][s1][t1][s2][t2], -1.0);
+                                                        }
+                                                    }
                                                 }
                                             }
                                             if(d.adj[i][s2][t2][s1][t1]) {
@@ -246,7 +266,12 @@ void solver::solve() const {
                                                 cst_flow[i][s1][t1].setLinearCoef(var_x[i][s2][t2][s1][t1], 1.0);
                                                 
                                                 if(s2 != s1) {
-                                                    cst_min_travel_time[i][s1][t1].setLinearCoef(var_x[i][s2][t2][s1][t1], 1.0);
+                                                    if(use_alt_min_travel_time) {
+                                                        cst_alt_min_travel_time[i][s1].setLinearCoef(var_x[i][s2][t2][s1][t1], d.min_travel_time[i][s1] - 1);
+                                                    } else {
+                                                        cst_min_travel_time[i][s1][t1].setLinearCoef(var_x[i][s2][t2][s1][t1], 1.0);
+                                                    }
+                                                    
                                                     cst_headway_1[i][s1][t1].setLinearCoef(var_x[i][s2][t2][s1][t1], 1.0);
                                                     cst_headway_2[i][s1][t1].setLinearCoef(var_x[i][s2][t2][s1][t1], 1.0);
                                                     
@@ -258,7 +283,7 @@ void solver::solve() const {
                                                         }
                                                     }
                                                     
-                                                    if(d.seg_type[s1] == 'X' || d.seg_type[s1] == 'T') {
+                                                    if(d.seg_type[s1] == 'X') {
                                                         cst_cant_stop[i][s1][t1].setLinearCoef(var_x[i][s2][t2][s1][t1], 1.0);
                                                     }
                                                 }
@@ -278,23 +303,48 @@ void solver::solve() const {
                         } // If accessible(i, s1) and v(i, s1, t1)
                     } // If real_node(s1, t1)
                     
-                    for(auto tt = t1; tt < t1 + d.min_travel_time[i][s1] - 1; tt++) {
-                        if(real_node(s1, t1) && d.accessible[i][s1] && d.v[i][s1][t1]) {
-                            if(real_node(s1, tt) && d.v[i][s1][tt]) {
-                                for(auto s2 = 0; s2 < d.ns + 2; s2++) {
-                                    if(s2 != s1 && d.accessible[i][s2]) {
-                                        for(auto t2 = 0; t2 < d.ni + 2; t2++) {
-                                            if(d.v[i][s2][t2] && d.adj[i][s1][tt][s2][t2]) {
-                                                cst_min_travel_time[i][s1][t1].setLinearCoef(var_x[i][s1][tt][s2][t2], 1.0);
+                    if(!use_alt_min_travel_time) {
+                        if(use_max_travel_time) {
+                            for(auto tt = t1; tt < d.ni + 2; tt++) {
+                                if(
+                                    (tt < t1 + d.min_travel_time[i][s1] - 1) || // Can't leave before min time
+                                    (tt > t1 + d.max_travel_time[i][s1]) // If you left at this time, you would exceed the UB on the solution cost
+                                ) {
+                                    if(real_node(s1, t1) && d.accessible[i][s1] && d.v[i][s1][t1]) {
+                                        if(real_node(s1, tt) && d.v[i][s1][tt]) {
+                                            for(auto s2 = 0; s2 < d.ns + 2; s2++) {
+                                                if(s2 != s1 && d.accessible[i][s2]) {
+                                                    for(auto t2 = 0; t2 < d.ni + 2; t2++) {
+                                                        if(d.v[i][s2][t2] && d.adj[i][s1][tt][s2][t2]) {
+                                                            cst_min_travel_time[i][s1][t1].setLinearCoef(var_x[i][s1][tt][s2][t2], 1.0);
+                                                        }
+                                                    }
+                                                }
+                                            } // For s2
+                                        } // If real_node(s1, tt) and v(i, s1, tt)
+                                    } // If real_node(s1, t1) and accessible(i, s1) and v(i, s1, t1)
+                                } // If the eventual cost is <= UB
+                            } // For tt
+                        } else {
+                            for(auto tt = t1; tt < t1 + d.min_travel_time[i][s1] - 1; tt++) {
+                                if(real_node(s1, t1) && d.accessible[i][s1] && d.v[i][s1][t1]) {
+                                    if(real_node(s1, tt) && d.v[i][s1][tt]) {
+                                        for(auto s2 = 0; s2 < d.ns + 2; s2++) {
+                                            if(s2 != s1 && d.accessible[i][s2]) {
+                                                for(auto t2 = 0; t2 < d.ni + 2; t2++) {
+                                                    if(d.v[i][s2][t2] && d.adj[i][s1][tt][s2][t2]) {
+                                                        cst_min_travel_time[i][s1][t1].setLinearCoef(var_x[i][s1][tt][s2][t2], 1.0);
+                                                    }
+                                                }
                                             }
-                                        }
-                                    }
-                                } // For s2
-                            } // If real_node(s1, tt) and v(i, s1, tt)
-                        } // If real_node(s1, t1) and accessible(i, s1) and v(i, s1, t1)
-                    } // For tt
+                                        } // For s2
+                                    } // If real_node(s1, tt) and v(i, s1, tt)
+                                } // If real_node(s1, t1) and accessible(i, s1) and v(i, s1, t1)
+                            } // For tt
+                        }
+                    }
                     
-                    if(d.seg_type[s1] == 'X' || d.seg_type[s1] == 'T') {
+                    if(d.seg_type[s1] == 'X') {
                         for(auto tt = t1 + d.min_travel_time[i][s1]; tt < d.ni + 2; tt++) {
                             if(real_node(s1, t1) && d.accessible[i][s1] && d.v[i][s1][t1]) {
                                 if(real_node(s1, tt) && d.v[i][s1][tt]) {
@@ -397,13 +447,12 @@ void solver::solve() const {
                     model.add(cst_max_one_train[s1]);
                 }
                 
-                if(d.tr_sa[i]) {
-                    model.add(cst_visit_sa[i]);
-                    model.add(cst_sa_delay[i]);
+                model.add(cst_flow[i][s1]);
+                
+                if(!use_alt_min_travel_time) {
+                    model.add(cst_min_travel_time[i][s1]);
                 }
                 
-                model.add(cst_flow[i][s1]);
-                model.add(cst_min_travel_time[i][s1]);
                 model.add(cst_headway_1[i][s1]);
                 model.add(cst_headway_2[i][s1]);
                 model.add(cst_headway_3[i][s1]);
@@ -416,11 +465,20 @@ void solver::solve() const {
                     }
                 }
                 
-                if(d.seg_type[s1] == 'X' || d.seg_type[s1] == 'T') {
+                if(d.seg_type[s1] == 'X') {
                     model.add(cst_cant_stop[i][s1]);
                 }
             } // If s1 >= 1 and s1 <= ns
         } // For s1
+        
+        if(d.tr_sa[i]) {
+            model.add(cst_visit_sa[i]);
+            model.add(cst_sa_delay[i]);
+        }
+        
+        if(use_alt_min_travel_time) {
+            model.add(cst_alt_min_travel_time[i]);
+        }
     } // For i
     
     model.add(cst_exit_sigma);
@@ -518,6 +576,7 @@ void solver::solve() const {
     
     std::cout << "Cplex optimal value: " << cplex.getObjValue() << std::endl;
     
+    auto x = int_matrix_5d(d.nt, int_matrix_4d(d.ns + 2, int_matrix_3d(d.ni + 2, int_matrix(d.ns + 2, ivec(d.ni + 2, 0)))));
     for(auto i = 0; i < d.nt; i++) {
         auto dv = cplex.getValue(var_d[i]);
         if(dv > eps) {
@@ -526,7 +585,10 @@ void solver::solve() const {
         for(auto s1 = 0; s1 < d.ns + 2; s1++) {
             if(d.accessible[i][s1]) {
                 if(d.sa[i][s1]) {
-                    std::cout << "e[" << i << "][" << s1 << "]: " << cplex.getValue(var_e[i][s1]) << std::endl;
+                    auto ev = cplex.getValue(var_e[i][s1]);
+                    if(ev > eps) {
+                        std::cout << "e[" << i << "][" << s1 << "]: " << ev << std::endl;
+                    }
                 }
                 for(auto t1 = 0; t1 < d.ni + 2; t1++) {
                     if(d.v[i][s1][t1]) {
@@ -536,12 +598,35 @@ void solver::solve() const {
                                     if(d.v[i][s2][t2] && d.adj[i][s1][t1][s2][t2]) {
                                         auto xv = cplex.getValue(var_x[i][s1][t1][s2][t2]);
                                         if(xv > eps) {
-                                            std::cout << "x[" << i << "][" << s1 << "][" << t1 << "][" << s2 << "][" << t2 << "]: " << xv << std::endl;
+                                            x[i][s1][t1][s2][t2] = 1;
                                         }
                                     }
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+    
+    for(auto i = 0; i < d.nt; i++) {
+        std::cout << std::endl << "Train #" << i << std::endl;
+        auto current_seg = 0, current_time = 0;
+
+        restart:
+        while(current_seg != d.ns + 1) {
+            for(auto s = 0; s < d.ns + 2; s++) {
+                for(auto t = 0; t < d.ni + 2; t++) {
+                    if(x[i][current_seg][current_time][s][t] == 1) {
+                        if(s != current_seg) {
+                            if(s != d.ns + 1) {
+                                std::cout << "\tReaches segment (" << d.seg_w_ext[s] << ", " << d.seg_e_ext[s] << ")[" << d.seg_type[s] << "] at time " << t << std::endl;
+                            }
+                            current_seg = s;
+                        }
+                        current_time = t;
+                        goto restart;
                     }
                 }
             }
