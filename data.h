@@ -116,7 +116,8 @@ struct data {
                         sa_ext_times, // (train => (ti1, ...)) is the raw list of times for <train>'s SA
                         min_time_to_arrive_at, // ((train, segment) => time) minimum time to reach <segment> from the origin terminal
                         max_time_to_leave_from, // ((train, segment) => time) maximum time to leave <segment> to the destination terminal
-                        min_travel_time; // ((train, segment) => time) minimum travel time on <segment> for <train>
+                        min_travel_time, // ((train, segment) => time) minimum travel time on <segment> for <train>
+                        max_travel_time; // ((train, segment) => time) maximum travel time on <segment> for <train> in order for the penalty to be < UB
                         
     vertices_map        v; // ((train, segment, time) => bool) is true if vertex (<train>, <segment>) is in <train>'s graph
     

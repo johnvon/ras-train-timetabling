@@ -237,6 +237,7 @@ auto data::calculate_auxiliary_data() {
     min_time_to_arrive_at = int_matrix(nt, ivec(ns + 2, -1));
     max_time_to_leave_from = int_matrix(nt, ivec(ns + 2, -1));
     min_travel_time = int_matrix(nt, ivec(ns + 2, -1));
+    max_travel_time = int_matrix(nt, ivec(ns + 2, -1));
         
     for(auto i = 0; i < nt; i++) {
         tr_max_speed[i] = tr_speed_mult[i] * (tr_westbound[i] ? speed_ew : speed_we);
@@ -272,6 +273,7 @@ auto data::calculate_auxiliary_data() {
                 min_travel_time[i][s] = std::ceil(seg_siding_length[s] / speed) +
                                         std::ceil((seg_length[s] - seg_siding_length[s]) / speed_aux);
             }
+            max_travel_time[i][s] = min_travel_time[i][s] + std::ceil(total_cost_ub / delay_price[tr_class[i]]);
         }
     }
     
@@ -336,6 +338,13 @@ auto data::generate_sigma_s_arcs() {
     for(auto i = 0; i < nt; i++) {
         for(auto s : tr_orig_seg[i]) {
             for(auto t = min_time_to_arrive_at[i][s]; t <= max_time_to_leave_from[i][s]; t++) {
+                if(
+                    (t + nt - max_time_to_leave_from[i][s] > tr_wt[i] + wt_tw_right) &&
+                    (wt_price * (t + (nt - max_time_to_leave_from[i][s]) - (tr_wt[i] + wt_tw_right)) > total_cost_ub)
+                ) {
+                    continue;
+                }
+                
                 if(v[i][s][t]) {
                     adj[i][0][0][s][t] = true;
                     n_out[i][0][0]++;
@@ -360,7 +369,7 @@ auto data::generate_s_tau_arcs() {
                     
                     if(
                         (t > tr_wt[i] + wt_tw_right) &&
-                        (wt_price * (t - tr_wt[i] + wt_tw_right) > total_cost_ub)
+                        (wt_price * (t - tr_wt[i] - wt_tw_right) > total_cost_ub)
                     ) {
                         continue;
                     }
@@ -377,23 +386,24 @@ auto data::generate_s_tau_arcs() {
 auto data::generate_stop_arcs() {
     for(auto i = 0; i < nt; i++) {
         for(auto s = 1; s < ns + 1; s++) {
-            // "Can't stop on xover or switch" must be imposed as a constraint and can't be
-            // imposed by not createing stop arcs, because some x-overs are long 0.3 and
-            // the train's max speed is 0.25 => it must take 2 time intervals to travel them
-            
-            // if(seg_type[s] != 'X' && seg_siding_length[s] >= tr_length[i]) {
-                for(auto t = min_time_to_arrive_at[i][s]; t <= max_time_to_leave_from[i][s]; t++) {
-                    if(t + 1 <= ni && v[i][s][t] && v[i][s][t + 1]) {
-                        if(tr_sa[i] && sa[i][s] && t+1 > sa_times[i][s] + sa_tw_right && sa_price * (t+1 - (sa_times[i][s] + sa_tw_right)) > total_cost_ub) {
-                            continue;
-                        }
-                        
-                        adj[i][s][t][s][t + 1] = true;
-                        n_out[i][s][t]++;
-                        n_in[i][s][t + 1]++;
+            for(auto t = min_time_to_arrive_at[i][s]; t <= max_time_to_leave_from[i][s]; t++) {
+                if(t + 1 <= ni && v[i][s][t] && v[i][s][t + 1]) {
+                    if(tr_sa[i] && sa[i][s] && t+1 > sa_times[i][s] + sa_tw_right && sa_price * (t+1 - (sa_times[i][s] + sa_tw_right)) > total_cost_ub) {
+                        continue;
                     }
+                    
+                    if(
+                        (t+1 + nt - max_time_to_leave_from[i][s] > tr_wt[i] + wt_tw_right) &&
+                        (wt_price * (t+1 + (nt - max_time_to_leave_from[i][s]) - (tr_wt[i] + wt_tw_right)) > total_cost_ub)
+                    ) {
+                        continue;
+                    }
+                    
+                    adj[i][s][t][s][t + 1] = true;
+                    n_out[i][s][t]++;
+                    n_in[i][s][t + 1]++;
                 }
-            // }
+            }
         }
     }
 }
@@ -409,6 +419,20 @@ auto data::generate_movement_arcs() {
                     for(auto t = min_time_to_arrive_at[i][s1]; t <= max_time_to_leave_from[i][s1]; t++) {
                         if(t + 1 >= min_time_to_arrive_at[i][s2] && t + 1 <= max_time_to_leave_from[i][s2] && t + 1 <= ni && v[i][s1][t] && v[i][s2][t + 1]) {
                             if(tr_sa[i] && sa[i][s1] && t > sa_times[i][s1] + sa_tw_right && sa_price * (t - (sa_times[i][s1] + sa_tw_right)) > total_cost_ub) {
+                                continue;
+                            }
+                            
+                            if(
+                                (t + nt - max_time_to_leave_from[i][s1] > tr_wt[i] + wt_tw_right) &&
+                                (wt_price * (t + (nt - max_time_to_leave_from[i][s1]) - (tr_wt[i] + wt_tw_right)) > total_cost_ub)
+                            ) {
+                                continue;
+                            }
+                            
+                            if(
+                                (t+1 + nt - max_time_to_leave_from[i][s2] > tr_wt[i] + wt_tw_right) &&
+                                (wt_price * (t + (nt - max_time_to_leave_from[i][s2]) - (tr_wt[i] + wt_tw_right)) > total_cost_ub)
+                            ) {
                                 continue;
                             }
 
@@ -445,7 +469,7 @@ auto data::cleanup_adjacency() {
                             for(auto s2 = 0; s2 < ns + 2; s2++) {
                                 for(auto t2 = 0; t2 < ns + 2; t2++) {
                                     if(adj[i][s1][t1][s2][t2]) {
-                                        adj[i][s1][t1][s2][t2] = 0;
+                                        adj[i][s1][t1][s2][t2] = false;
                                         n_in[i][s2][t2]--;
                                     }
                                     if(adj[i][s2][t2][s1][t1]) {
