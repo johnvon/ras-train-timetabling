@@ -305,28 +305,7 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                     
                     if(!use_alt_min_travel_time) {
                         if(use_max_travel_time) {
-                            for(auto tt = t1; tt < d.ni + 2; tt++) {
-                                if(
-                                    (tt < t1 + d.min_travel_time[i][s1] - 1) || // Can't leave before min time
-                                    (tt > t1 + d.max_travel_time[i][s1]) // If you left at this time, you would exceed the UB on the solution cost
-                                ) {
-                                    if(real_node(s1, t1) && d.accessible[i][s1] && d.v[i][s1][t1]) {
-                                        if(real_node(s1, tt) && d.v[i][s1][tt]) {
-                                            for(auto s2 = 0; s2 < d.ns + 2; s2++) {
-                                                if(s2 != s1 && d.accessible[i][s2]) {
-                                                    for(auto t2 = 0; t2 < d.ni + 2; t2++) {
-                                                        if(d.v[i][s2][t2] && d.adj[i][s1][tt][s2][t2]) {
-                                                            cst_min_travel_time[i][s1][t1].setLinearCoef(var_x[i][s1][tt][s2][t2], 1.0);
-                                                        }
-                                                    }
-                                                }
-                                            } // For s2
-                                        } // If real_node(s1, tt) and v(i, s1, tt)
-                                    } // If real_node(s1, t1) and accessible(i, s1) and v(i, s1, t1)
-                                } // If the eventual cost is <= UB
-                            } // For tt
-                        } else {
-                            for(auto tt = t1; tt < t1 + d.min_travel_time[i][s1] - 1; tt++) {
+                            for(auto tt = t1 + d.max_travel_time[i][s1] + 1; tt < d.ni + 2; tt++) {
                                 if(real_node(s1, t1) && d.accessible[i][s1] && d.v[i][s1][t1]) {
                                     if(real_node(s1, tt) && d.v[i][s1][tt]) {
                                         for(auto s2 = 0; s2 < d.ns + 2; s2++) {
@@ -342,6 +321,22 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                                 } // If real_node(s1, t1) and accessible(i, s1) and v(i, s1, t1)
                             } // For tt
                         }
+                        
+                        for(auto tt = t1; tt < t1 + d.min_travel_time[i][s1] - 1; tt++) {
+                            if(real_node(s1, t1) && d.accessible[i][s1] && d.v[i][s1][t1]) {
+                                if(real_node(s1, tt) && d.v[i][s1][tt]) {
+                                    for(auto s2 = 0; s2 < d.ns + 2; s2++) {
+                                        if(s2 != s1 && d.accessible[i][s2]) {
+                                            for(auto t2 = 0; t2 < d.ni + 2; t2++) {
+                                                if(d.v[i][s2][t2] && d.adj[i][s1][tt][s2][t2]) {
+                                                    cst_min_travel_time[i][s1][t1].setLinearCoef(var_x[i][s1][tt][s2][t2], 1.0);
+                                                }
+                                            }
+                                        }
+                                    } // For s2
+                                } // If real_node(s1, tt) and v(i, s1, tt)
+                            } // If real_node(s1, t1) and accessible(i, s1) and v(i, s1, t1)
+                        } // For tt
                     }
                     
                     if(d.seg_type[s1] == 'X') {
