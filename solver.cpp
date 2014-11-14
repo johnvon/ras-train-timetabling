@@ -228,8 +228,6 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                     }
                 
                     if(d.accessible[i][s1] && d.v[i][s1][t1]) {
-                        std::cout << "\t\t\tTime #" << t1 << std::endl;
-                        
                         name.str(""); name << "cst_flow_" << i << "_" << s1 << "_" << t1;
                         cst_flow[i][s1][t1] = IloRange(env, 0.0, 0.0, name.str().c_str());
                         
@@ -250,11 +248,11 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                         name.str(""); name << "cst_headway_4_" << i << "_" << s1 << "_" << t1;
                         cst_headway_4[i][s1][t1] = IloRange(env, -IloInfinity, 1.0, name.str().c_str());
                     
-                        if(d.adj[i][0][0][s1][t1]) {
+                        if(std::find(d.tr_orig_seg[i].begin(), d.tr_orig_seg[i].end(), s1) != d.tr_orig_seg[i].end() && d.adj[i][0][0][s1][t1]) {
                             cst_exit_sigma[i].setLinearCoef(var_x[i][0][0][s1][t1], 1.0);
                         } 
             
-                        if(d.adj[i][s1][t1][d.ns + 1][d.ni + 1]) {
+                        if(std::find(d.tr_dest_seg[i].begin(), d.tr_dest_seg[i].end(), s1) != d.tr_dest_seg[i].end() && d.adj[i][s1][t1][d.ns + 1][d.ni + 1]) {
                             cst_enter_tau[i].setLinearCoef(var_x[i][s1][t1][d.ns + 1][d.ni + 1], 1.0);
                             cst_wt_delay_1[i].setLinearCoef(var_x[i][s1][t1][d.ns + 1][d.ni + 1], t1);
                             cst_wt_delay_2[i].setLinearCoef(var_x[i][s1][t1][d.ns + 1][d.ni + 1], t1);
@@ -277,12 +275,8 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                     
                         for(const auto& s2 : d.fnetwork[s1]) {
                             if(d.accessible[i][s2]) {
-                                std::cout << "\t\t\t\tSegment #" << s2 << std::endl;
-                                
                                 for(auto t2 = 0; t2 < d.ni + 2; t2++) {
                                     if(d.v[i][s2][t2]) {
-                                        std::cout << "\t\t\t\t\tTime #" << t2 << std::endl;
-                                        
                                         if(d.adj[i][s1][t1][s2][t2]) {
                                             cst_flow[i][s1][t1].setLinearCoef(var_x[i][s1][t1][s2][t2], -1.0);
                                             
