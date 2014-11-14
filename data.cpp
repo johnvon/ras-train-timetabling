@@ -215,11 +215,13 @@ auto data::calculate_schedules() {
 
 auto data::calculate_network() {
     network = indicator_matrix(ns + 2, bvec(ns + 2, false));
+    fnetwork = int_matrix(ns + 2);
     
     for(auto s1 = 0; s1 < ns + 2; s1++) {
         for(auto s2 = 0; s2 < ns + 2; s2++) {
             if(seg_e_ext[s1] == seg_w_ext[s2] || seg_w_ext[s1] == seg_e_ext[s2]) {
                 network[s1][s2] = true;
+                fnetwork[s1].push_back(s2);
             }
         }
     }
@@ -228,6 +230,7 @@ auto data::calculate_network() {
         assert(network[s1][s1] == false);
         for(auto s2 = s1 + 1; s2 < ns + 2; s2++) {
             assert(network[s1][s2] == network[s2][s1]);
+            assert((std::find(fnetwork[s1].begin(), fnetwork[s1].end(), s2) != fnetwork[s1].end()) == (std::find(fnetwork[s2].begin(), fnetwork[s2].end(), s1) != fnetwork[s2].end()));
         }
     }
 }
@@ -543,7 +546,7 @@ data::data(const std::string& file_name) : file_name{file_name} {
     read_trains(pt);
     read_mows(pt);
     
-    std::cout << "Creating graphs" << std::endl;
+    std::cout << "Creating graphs..." << std::endl;
     
     t_start = high_resolution_clock::now();
     
