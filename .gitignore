@@ -19,3 +19,5 @@ main
 Makefile
 ras
 model.lp
+
+*.lp

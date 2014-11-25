@@ -24,7 +24,7 @@ class solver {
 public:
     solver(data& d) : d{d} {};
     
-    void solve() const;
+    void solve(bool use_max_travel_time, bool use_alt_min_travel_time) const;
 };
 
 #endif

@@ -1,0 +1,150 @@
+CPLEX> read model.lp
+Problem 'model.lp' read.
+Read time = 6.52 sec. (165.86 ticks)
+CPLEX> opt
+Presolve has eliminated 139866 rows and 18838 columns...
+Presolve has eliminated 152476 rows and 26695 columns...
+Presolve has eliminated 166516 rows and 35443 columns...
+Presolve has eliminated 184214 rows and 46390 columns...
+Tried aggregator 3 times.
+MIP Presolve eliminated 201508 rows and 55757 columns.
+MIP Presolve modified 7690 coefficients.
+Aggregator did 214 substitutions.
+Reduced MIP has 6321 rows, 4356 columns, and 130030 nonzeros.
+Reduced MIP has 4354 binaries, 2 generals, 0 SOSs, and 0 indicators.
+Presolve time = 140.88 sec. (46387.53 ticks)
+Found incumbent of value 4950.000000 after 142.38 sec. (47609.22 ticks)
+Probing fixed 1704 vars, tightened 0 bounds.
+Probing changed sense of 209 constraints.
+Probing time = 0.39 sec. (105.17 ticks)
+Cover probing fixed 2 vars, tightened 16 bounds.
+Tried aggregator 12 times.
+MIP Presolve eliminated 4920 rows and 3326 columns.
+MIP Presolve modified 2882 coefficients.
+Aggregator did 360 substitutions.
+Reduced MIP has 1018 rows, 670 columns, and 6270 nonzeros.
+Reduced MIP has 668 binaries, 2 generals, 0 SOSs, and 0 indicators.
+Presolve time = 0.39 sec. (392.16 ticks)
+Probing fixed 668 vars, tightened 0 bounds.
+Probing time = 0.01 sec. (2.66 ticks)
+Tried aggregator 1 time.
+MIP Presolve eliminated 1018 rows and 670 columns.
+All rows and columns eliminated.
+Presolve time = 0.00 sec. (2.09 ticks)
+
+Root node processing (before b&c):
+  Real time             =  143.18 sec. (48119.39 ticks)
+Parallel b&c, 4 threads:
+  Real time             =    0.00 sec. (0.00 ticks)
+  Sync time (average)   =    0.00 sec.
+  Wait time (average)   =    0.00 sec.
+                          ------------
+Total (root+branch&cut) =  143.18 sec. (48119.39 ticks)
+
+Solution pool: 1 solution saved.
+
+MIP - Integer optimal solution:  Objective =  0.0000000000e+00
+Solution time =  143.19 sec.  Iterations = 0  Nodes = 0
+Deterministic time = 48119.56 ticks  (336.06 ticks/sec)
+
+CPLEX> disp sol var *
+Incumbent solution
+Variable Name                Solution Value
+var_x_0_0_0_1_57                   1.000000
+var_x_0_1_58_2_59                  1.000000
+var_x_0_2_62_3_63                  1.000000
+var_x_0_3_66_4_67                  1.000000
+var_x_0_4_68_5_69                  1.000000
+var_x_0_5_72_6_73                  1.000000
+var_x_0_6_76_7_77                  1.000000
+var_x_0_7_78_8_79                  1.000000
+var_x_0_8_82_9_83                  1.000000
+var_x_0_9_87_10_88                 1.000000
+var_x_0_10_89_11_90                1.000000
+var_x_0_11_90_12_91                1.000000
+var_x_0_12_93_13_94                1.000000
+var_x_0_13_96_14_97                1.000000
+var_x_0_14_98_15_99                1.000000
+var_x_0_15_101_40_102              1.000000
+var_x_0_40_103_16_104              1.000000
+var_x_0_16_105_17_106              1.000000
+var_x_0_17_108_18_109              1.000000
+var_x_0_18_112_19_113              1.000000
+var_x_0_19_116_20_117              1.000000
+var_x_0_20_119_21_120              1.000000
+var_x_0_21_122_22_123              1.000000
+var_x_0_22_125_23_126              1.000000
+var_x_0_23_128_33_129              1.000000
+var_x_0_33_132_34_133              1.000000
+var_x_0_34_136_35_137              1.000000
+var_x_0_35_138_36_139              1.000000
+var_x_0_36_142_37_143              1.000000
+var_x_0_37_146_38_147              1.000000
+var_x_0_38_148_39_149              1.000000
+var_x_0_39_152_48_721              1.000000
+var_x_0_1_57_1_58                  1.000000
+var_x_0_2_59_2_60                  1.000000
+var_x_0_2_60_2_61                  1.000000
+var_x_0_2_61_2_62                  1.000000
+var_x_0_3_63_3_64                  1.000000
+var_x_0_3_64_3_65                  1.000000
+var_x_0_3_65_3_66                  1.000000
+var_x_0_4_67_4_68                  1.000000
+var_x_0_5_69_5_70                  1.000000
+var_x_0_5_70_5_71                  1.000000
+var_x_0_5_71_5_72                  1.000000
+var_x_0_6_73_6_74                  1.000000
+var_x_0_6_74_6_75                  1.000000
+var_x_0_6_75_6_76                  1.000000
+var_x_0_7_77_7_78                  1.000000
+var_x_0_8_79_8_80                  1.000000
+var_x_0_8_80_8_81                  1.000000
+var_x_0_8_81_8_82                  1.000000
+var_x_0_9_83_9_84                  1.000000
+var_x_0_9_84_9_85                  1.000000
+var_x_0_9_85_9_86                  1.000000
+var_x_0_9_86_9_87                  1.000000
+var_x_0_10_88_10_89                1.000000
+var_x_0_12_91_12_92                1.000000
+var_x_0_12_92_12_93                1.000000
+var_x_0_13_94_13_95                1.000000
+var_x_0_13_95_13_96                1.000000
+var_x_0_14_97_14_98                1.000000
+var_x_0_15_99_15_100               1.000000
+var_x_0_15_100_15_101              1.000000
+var_x_0_16_104_16_105              1.000000
+var_x_0_17_106_17_107              1.000000
+var_x_0_17_107_17_108              1.000000
+var_x_0_18_109_18_110              1.000000
+var_x_0_18_110_18_111              1.000000
+var_x_0_18_111_18_112              1.000000
+var_x_0_19_113_19_114              1.000000
+var_x_0_19_114_19_115              1.000000
+var_x_0_19_115_19_116              1.000000
+var_x_0_20_117_20_118              1.000000
+var_x_0_20_118_20_119              1.000000
+var_x_0_21_120_21_121              1.000000
+var_x_0_21_121_21_122              1.000000
+var_x_0_22_123_22_124              1.000000
+var_x_0_22_124_22_125              1.000000
+var_x_0_23_126_23_127              1.000000
+var_x_0_23_127_23_128              1.000000
+var_x_0_33_129_33_130              1.000000
+var_x_0_33_130_33_131              1.000000
+var_x_0_33_131_33_132              1.000000
+var_x_0_34_133_34_134              1.000000
+var_x_0_34_134_34_135              1.000000
+var_x_0_34_135_34_136              1.000000
+var_x_0_35_137_35_138              1.000000
+var_x_0_36_139_36_140              1.000000
+var_x_0_36_140_36_141              1.000000
+var_x_0_36_141_36_142              1.000000
+var_x_0_37_143_37_144              1.000000
+var_x_0_37_144_37_145              1.000000
+var_x_0_37_145_37_146              1.000000
+var_x_0_38_147_38_148              1.000000
+var_x_0_39_149_39_150              1.000000
+var_x_0_39_150_39_151              1.000000
+var_x_0_39_151_39_152              1.000000
+var_x_0_40_102_40_103              1.000000
+All other variables matching '*' are 0.

@@ -53,7 +53,8 @@ struct data {
                         speed_we, // Maximum speed West -> East
                         speed_siding, // Maximum speed in sidings
                         speed_switch, // Maximum speed in switches
-                        speed_xover; // Maximum speed in cross-overs
+                        speed_xover, // Maximum speed in cross-overs
+                        total_cost_ub; // Upped bound on the total cost of the solution
 
     int                 nt, // Number of trains
                         ns, // Number of segments
@@ -84,6 +85,7 @@ struct data {
     dvec                seg_e_min_dist, // Min distance from east terminal to segment
                         seg_w_min_dist, // Min distance from west terminal to segment
                         seg_length, // Length of segment
+                        seg_siding_length, // "Real" length of a siding (i.e. wthout the switch)
                         tr_speed_mult, // Train's speed multiplier
                         tr_length, // Train's length
                         tr_max_speed; // Max speed of a train on the tracks
@@ -114,7 +116,10 @@ struct data {
                         sa_ext_times, // (train => (ti1, ...)) is the raw list of times for <train>'s SA
                         min_time_to_arrive_at, // ((train, segment) => time) minimum time to reach <segment> from the origin terminal
                         max_time_to_leave_from, // ((train, segment) => time) maximum time to leave <segment> to the destination terminal
-                        min_travel_time; // ((train, segment) => time) minimum travel time on <segment> for <train>
+                        min_travel_time, // ((train, segment) => time) minimum travel time on <segment> for <train>
+                        max_travel_time; // ((train, segment) => time) maximum travel time on <segment> for <train> in order for the penalty to be < UB
+    
+    int_matrix_3d       tnetwork; // ((train, segment) => [segment1, ...]) list of segments connected to <segment> in <train>'s direction
                         
     vertices_map        v; // ((train, segment, time) => bool) is true if vertex (<train>, <segment>) is in <train>'s graph
     
