@@ -215,11 +215,37 @@ auto data::calculate_schedules() {
 
 auto data::calculate_network() {
     network = indicator_matrix(ns + 2, bvec(ns + 2, false));
+    tnetwork = int_matrix_3d(nt, int_matrix(ns + 2));
     
     for(auto s1 = 0; s1 < ns + 2; s1++) {
+        for(auto i = 0; i < nt; i++) {
+            if(s1 > 0 && s1 < ns + 1) {
+                tnetwork[i][s1].push_back(s1);
+            }
+            
+            if(std::find(tr_orig_seg[i].begin(), tr_orig_seg[i].end(), s1) != tr_orig_seg[i].end()) {
+                tnetwork[i][0].push_back(s1);
+                // We make it symmetric for now:
+                tnetwork[i][s1].push_back(0);
+            }
+            
+            if(std::find(tr_dest_seg[i].begin(), tr_dest_seg[i].end(), s1) != tr_dest_seg[i].end()) {
+                tnetwork[i][s1].push_back(ns + 1);
+                // We make it symmetric for now:
+                tnetwork[i][ns + 1].push_back(s1);
+            }
+        }
+        
         for(auto s2 = 0; s2 < ns + 2; s2++) {
             if(seg_e_ext[s1] == seg_w_ext[s2] || seg_w_ext[s1] == seg_e_ext[s2]) {
                 network[s1][s2] = true;
+                for(auto i = 0; i < nt; i++) {
+                    // if((seg_e_ext[s1] == seg_w_ext[s2] && tr_eastbound[i]) || (seg_w_ext[s1] == seg_e_ext[s2] && tr_westbound[i])) {
+                    //     tnetwork[i][s1].push_back(s2);
+                    // }
+                    // We make it symmetric for now:
+                    tnetwork[i][s1].push_back(s2);
+                }
             }
         }
     }
@@ -543,7 +569,7 @@ data::data(const std::string& file_name) : file_name{file_name} {
     read_trains(pt);
     read_mows(pt);
     
-    std::cout << "Creating graphs" << std::endl;
+    std::cout << "Creating graphs..." << std::endl;
     
     t_start = high_resolution_clock::now();
     

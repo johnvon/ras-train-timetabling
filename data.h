@@ -118,6 +118,8 @@ struct data {
                         max_time_to_leave_from, // ((train, segment) => time) maximum time to leave <segment> to the destination terminal
                         min_travel_time, // ((train, segment) => time) minimum travel time on <segment> for <train>
                         max_travel_time; // ((train, segment) => time) maximum travel time on <segment> for <train> in order for the penalty to be < UB
+    
+    int_matrix_3d       tnetwork; // ((train, segment) => [segment1, ...]) list of segments connected to <segment> in <train>'s direction
                         
     vertices_map        v; // ((train, segment, time) => bool) is true if vertex (<train>, <segment>) is in <train>'s graph
     
