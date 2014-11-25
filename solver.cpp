@@ -44,9 +44,9 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
         for(const auto& s2 : d.tr_orig_seg[i]) {
             if(d.accessible[i][s2]) {
                 var_x[i][0][0][s2] = IloNumVarArray(env, d.ni + 2);
-                for(auto t2 = 1; t2 < d.max_time_to_leave_from[i][s2]; t2++) {
-                    if(d.v[i][s2][t2]) {
-                        name.str(""); name << "var_x_sigma_" << s2 << "_" << t2;
+                for(auto t2 = 1; t2 < d.ni + 2; t2++) {
+                    if(d.v[i][s2][t2] && d.adj[i][0][0][s2][t2]) {
+                        name.str(""); name << "var_x_" << i << "_sigma_" << s2 << "_" << t2;
                         var_x[i][0][0][s2][t2] = IloNumVar(env, 0.0, 1.0, IloNumVar::Bool, name.str().c_str());
                     }
                 }
@@ -67,7 +67,7 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                     if(d.v[i][s1][t1]) {
                         var_x[i][s1][t1] = var_matrix_2d(env, d.ns + 2);
                         
-                        for(const auto& s2 : d.fnetwork[s1]) {
+                        for(const auto& s2 : d.tnetwork[i][s1]) {
                             if(d.accessible[i][s2]) {
                                 var_x[i][s1][t1][s2] = IloNumVarArray(env, d.ni + 2);
                                 
@@ -85,10 +85,10 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
         // Node-to-tau arcs
         for(const auto& s1 : d.tr_dest_seg[i]) {
             if(d.accessible[i][s1]) {
-                for(auto t1 = d.min_time_to_arrive_at[i][s1]; t1 < d.ni + 1; t1++) {
-                    if(d.v[i][s1][t1]) {
+                for(auto t1 = 0; t1 < d.ni + 1; t1++) {
+                    if(d.v[i][s1][t1] && d.adj[i][s1][t1][d.ns + 1][d.ni + 1]) {
                         var_x[i][s1][t1][d.ns + 1] = IloNumVarArray(env, d.ni + 2);
-                        name.str(""); name << "var_x_" << s1 << "_" << t1 << "_tau";
+                        name.str(""); name << "var_x_" << i << "_" << s1 << "_" << t1 << "_tau";
                         var_x[i][s1][t1][d.ns + 1][d.ni + 1] = IloNumVar(env, 0.0, 1.0, IloNumVar::Bool, name.str().c_str());
                     }
                 }
@@ -248,11 +248,11 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                         name.str(""); name << "cst_headway_4_" << i << "_" << s1 << "_" << t1;
                         cst_headway_4[i][s1][t1] = IloRange(env, -IloInfinity, 1.0, name.str().c_str());
                     
-                        if(std::find(d.tr_orig_seg[i].begin(), d.tr_orig_seg[i].end(), s1) != d.tr_orig_seg[i].end() && d.adj[i][0][0][s1][t1]) {
+                        if(d.adj[i][0][0][s1][t1]) {
                             cst_exit_sigma[i].setLinearCoef(var_x[i][0][0][s1][t1], 1.0);
-                        } 
+                        }
             
-                        if(std::find(d.tr_dest_seg[i].begin(), d.tr_dest_seg[i].end(), s1) != d.tr_dest_seg[i].end() && d.adj[i][s1][t1][d.ns + 1][d.ni + 1]) {
+                        if(d.adj[i][s1][t1][d.ns + 1][d.ni + 1]) {
                             cst_enter_tau[i].setLinearCoef(var_x[i][s1][t1][d.ns + 1][d.ni + 1], 1.0);
                             cst_wt_delay_1[i].setLinearCoef(var_x[i][s1][t1][d.ns + 1][d.ni + 1], t1);
                             cst_wt_delay_2[i].setLinearCoef(var_x[i][s1][t1][d.ns + 1][d.ni + 1], t1);
@@ -272,10 +272,18 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                             name.str(""); name << "cst_cant_stop_" << i << "_" << s1 << "_" << t1;
                             cst_cant_stop[i][s1][t1] = IloRange(env, -IloInfinity, 1.0, name.str().c_str());
                         }
-                    
-                        for(const auto& s2 : d.fnetwork[s1]) {
+                        
+                        if(use_alt_min_travel_time) {
+                            if(d.v[i][s1][t1+1]) {
+                                cst_alt_min_travel_time[i][s1].setLinearCoef(var_x[i][s1][t1][s1][t1+1], -1.0);
+                            }
+                        }
+                        
+                        for(const auto& s2 : d.tnetwork[i][s1]) {
                             if(d.accessible[i][s2]) {
-                                for(auto t2 = 0; t2 < d.ni + 2; t2++) {
+                                auto times = std::vector<int>({0, t1 - 1, t1 + 1, d.ni + 1});
+                                times.erase(std::unique(times.begin(), times.end()), times.end());
+                                for(auto t2 : times) {
                                     if(d.v[i][s2][t2]) {
                                         if(d.adj[i][s1][t1][s2][t2]) {
                                             cst_flow[i][s1][t1].setLinearCoef(var_x[i][s1][t1][s2][t2], -1.0);
@@ -283,12 +291,6 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                                             if(s2 != s1) {
                                                 cst_headway_3[i][s1][t1].setLinearCoef(var_x[i][s1][t1][s2][t2], 1.0);
                                                 cst_headway_4[i][s1][t1].setLinearCoef(var_x[i][s1][t1][s2][t2], 1.0);
-                                            } else {
-                                                if(t2 == t1 + 1) {
-                                                    if(use_alt_min_travel_time) {
-                                                        cst_alt_min_travel_time[i][s1].setLinearCoef(var_x[i][s1][t1][s2][t2], -1.0);
-                                                    }
-                                                }
                                             }
                                         }
                                         if(d.adj[i][s2][t2][s1][t1]) {
@@ -338,13 +340,13 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                         for(auto tt = t1 + d.max_travel_time[i][s1] + 1; tt < d.ni + 2; tt++) {
                             if(real_node(s1, t1) && d.accessible[i][s1] && d.v[i][s1][t1]) {
                                 if(real_node(s1, tt) && d.v[i][s1][tt]) {
-                                    for(const auto& s2 : d.fnetwork[s1]) {
+                                    for(const auto& s2 : d.tnetwork[i][s1]) {
                                         if(s2 != s1 && d.accessible[i][s2]) {
                                             if(d.v[i][s2][tt+1] && d.adj[i][s1][tt][s2][tt+1]) {
                                                 cst_min_travel_time[i][s1][t1].setLinearCoef(var_x[i][s1][tt][s2][tt+1], 1.0);
                                             }
                                         }
-                                        if(d.adj[i][s1][tt][d.ns + 1][d.ni + 1]) {
+                                        if(tt < d.ni && d.adj[i][s1][tt][d.ns + 1][d.ni + 1]) {
                                             cst_min_travel_time[i][s1][t1].setLinearCoef(var_x[i][s1][tt][d.ns + 1][d.ni + 1], 1.0);
                                         }
                                     } // For s2
@@ -356,14 +358,14 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                     for(auto tt = t1; tt < t1 + d.min_travel_time[i][s1] - 1; tt++) {
                         if(real_node(s1, t1) && d.accessible[i][s1] && d.v[i][s1][t1]) {
                             if(real_node(s1, tt) && d.v[i][s1][tt]) {
-                                for(const auto& s2 : d.fnetwork[s1]) {
+                                for(const auto& s2 : d.tnetwork[i][s1]) {
                                     if(s2 != s1 && d.accessible[i][s2]) {
                                         if(d.v[i][s2][tt+1] && d.adj[i][s1][tt][s2][tt+1]) {
                                             cst_min_travel_time[i][s1][t1].setLinearCoef(var_x[i][s1][tt][s2][tt+1], 1.0);
                                         }
                                     }
                                 } // For s2
-                                if(d.adj[i][s1][tt][d.ns + 1][d.ni + 1]) {
+                                if(tt < d.ni && d.adj[i][s1][tt][d.ns + 1][d.ni + 1]) {
                                     cst_min_travel_time[i][s1][t1].setLinearCoef(var_x[i][s1][tt][d.ns + 1][d.ni + 1], 1.0);
                                 }
                             } // If real_node(s1, tt) and v(i, s1, tt)
@@ -375,14 +377,14 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                     for(auto tt = t1 + d.min_travel_time[i][s1]; tt < d.ni + 2; tt++) {
                         if(real_node(s1, t1) && d.accessible[i][s1] && d.v[i][s1][t1]) {
                             if(real_node(s1, tt) && d.v[i][s1][tt]) {
-                                for(const auto& s2 : d.fnetwork[s1]) {
+                                for(const auto& s2 : d.tnetwork[i][s1]) {
                                     if(s2 != s1 && d.accessible[i][s2]) {
                                         if(d.v[i][s2][tt+1] && d.adj[i][s1][tt][s2][tt+1]) {
                                             cst_cant_stop[i][s1][t1].setLinearCoef(var_x[i][s1][tt][s2][tt+1], 1.0);
                                         }
                                     }
                                 } // For s2
-                                if(d.adj[i][s1][tt][d.ns + 1][d.ni + 1]) {
+                                if(tt < d.ni && d.adj[i][s1][tt][d.ns + 1][d.ni + 1]) {
                                     cst_cant_stop[i][s1][t1].setLinearCoef(var_x[i][s1][tt][d.ns + 1][d.ni + 1], 1.0);
                                 }
                             } // If real_node(s1, tt) and v(i, s1, tt)
@@ -395,7 +397,7 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                         for(auto tt = t1 - d.headway; tt < t1; tt++) {
                             if(real_node(s1, t1) && d.accessible[i][s1] && d.v[i][s1][t1]) {
                                 if(real_node(s1, tt) && d.accessible[j][s1] && d.v[j][s1][tt]) {
-                                    for(const auto& s2 : d.fnetwork[s1]) {
+                                    for(const auto& s2 : d.tnetwork[i][s1]) {
                                         if(s2 != s1) {
                                             if(d.v[j][s2][tt-1] && d.adj[j][s2][tt-1][s1][tt]) {
                                                 cst_headway_1[i][s1][t1].setLinearCoef(var_x[j][s2][tt-1][s1][tt], 1.0);
@@ -405,10 +407,10 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                                             }
                                         }
                                     } // For s2
-                                    if(d.adj[j][0][0][s1][tt]) {
+                                    if(tt > 1 && d.adj[j][0][0][s1][tt]) {
                                         cst_headway_1[i][s1][t1].setLinearCoef(var_x[j][0][0][s1][tt], 1.0);
                                     }
-                                    if(d.adj[j][s1][tt][d.ns + 1][d.ni + 1]) {
+                                    if(tt < d.ni && d.adj[j][s1][tt][d.ns + 1][d.ni + 1]) {
                                         cst_headway_2[i][s1][t1].setLinearCoef(var_x[j][s1][tt][d.ns + 1][d.ni + 1], 1.0);
                                     }
                                  } // If real_node(s1, tt) and accessible(j, s1) and v(j, s1, tt)
@@ -418,7 +420,7 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                         for(auto tt = t1 + 1; tt <= t1 + d.headway; tt++) {
                             if(real_node(s1, t1) && d.accessible[i][s1] && d.v[i][s1][t1]) {
                                 if(real_node(s1, tt) && d.accessible[j][s1] && d.v[j][s1][tt]) {
-                                    for(const auto& s2 : d.fnetwork[s1]) {
+                                    for(const auto& s2 : d.tnetwork[i][s1]) {
                                         if(s2 != s1) {
                                             if(d.v[j][s2][tt-1] && d.adj[j][s2][tt-1][s1][tt]) {
                                                 cst_headway_3[i][s1][t1].setLinearCoef(var_x[j][s2][tt-1][s1][tt], 1.0);
@@ -428,10 +430,10 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                                             }
                                         }
                                     } // For s2
-                                    if(d.adj[j][0][0][s1][tt]) {
+                                    if(tt > 1 && d.adj[j][0][0][s1][tt]) {
                                         cst_headway_3[i][s1][t1].setLinearCoef(var_x[j][0][0][s1][tt], 1.0);
                                     }
-                                    if(d.adj[j][s1][tt][d.ns + 1][d.ni + 1]) {
+                                    if(tt < d.ni && d.adj[j][s1][tt][d.ns + 1][d.ni + 1]) {
                                         cst_headway_4[i][s1][t1].setLinearCoef(var_x[j][s1][tt][d.ns + 1][d.ni + 1], 1.0);
                                     }
                                 } // If real_node(s1, tt) and accessible(j, s1) and v(j, s1, tt)
@@ -442,14 +444,14 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                             if(real_node(s1, t1) && d.accessible[i][s1] && d.v[i][s1][t1] && d.seg_type[s1] == 'S') {
                                 for(auto ss = 0; ss < d.ns + 2; ss++) {
                                     if(d.is_main[s1][ss] && real_node(ss, tt) && d.accessible[j][ss] && d.v[j][ss][tt]) {
-                                        for(const auto& s2 : d.fnetwork[ss]) {
+                                        for(const auto& s2 : d.tnetwork[i][ss]) {
                                             if(s2 != ss) {
                                                 if(d.v[j][s2][tt-1] && d.adj[j][s2][tt-1][ss][tt]) {
                                                     cst_siding[i][s1][t1].setLinearCoef(var_x[j][s2][tt-1][ss][tt], 1.0);
                                                 }
                                             }
                                         } // For s2
-                                        if(d.adj[j][0][0][ss][tt]) {
+                                        if(tt > 1 && d.adj[j][0][0][ss][tt]) {
                                             cst_siding[i][s1][t1].setLinearCoef(var_x[j][0][0][ss][tt], 1.0);
                                         }
                                     } // If is_main(s1, ss) and real_node(ss, tt) and accessible(j, ss) and v(j, ss, tt)
@@ -461,14 +463,14 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                             if(real_node(s1, t1) && d.accessible[i][s1] && d.v[i][s1][t1]) {
                                 for(auto ss = 0; ss < d.ns + 2; ss++) {
                                     if(d.is_main[s1][ss] && real_node(ss, t1) && d.accessible[j][ss] && d.v[j][ss][t1]) {
-                                        for(const auto& s2 : d.fnetwork[ss]) {
+                                        for(const auto& s2 : d.tnetwork[i][ss]) {
                                             if(s2 != ss) {
                                                 if(d.v[j][s2][t1-1] && d.adj[j][s2][t1-1][ss][t1]) {
                                                     cst_heavy[i][s1][t1].setLinearCoef(var_x[j][s2][t1-1][ss][t1], 1.0);
                                                 }
                                             }
                                         } // For s2
-                                        if(d.adj[j][0][0][ss][t1]) {
+                                        if(t1 > 1 && d.adj[j][0][0][ss][t1]) {
                                             cst_heavy[i][s1][t1].setLinearCoef(var_x[j][0][0][ss][t1], 1.0);
                                         }
                                     } // If is_main(s1, ss) and real_node(ss, t1) and accessible(j, ss) and v(j, ss, t1)
@@ -528,7 +530,7 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
     
     std::cout << "\t" << time_span.count() << " seconds" << std::endl;
     
-    std::cout << "Calculating objective function..." << std::endl;
+    std::cout << "Calculating objective function coefficients..." << std::endl;
     t_start = high_resolution_clock::now();
     
     double_matrix_5d coeff(d.nt, double_matrix_4d(d.ns + 2, double_matrix_3d(d.ni + 2, double_matrix(d.ns + 2, dvec(d.ni + 2, 0.0)))));
@@ -538,32 +540,45 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
         obj.setLinearCoef(var_d[i], d.wt_price);
         positive_obj.setLinearCoef(var_d[i], d.wt_price);
         
-        for(auto s1 = 0; s1 < d.ns + 2; s1++) {
-            if(s1 >= 1 && s1 <= d.ns && d.accessible[i][s1]) {
+        for(auto s1 = 1; s1 < d.ns + 1; s1++) {
+            if(d.accessible[i][s1]) {
                 if(d.tr_sa[i] && d.sa[i][s1]) {
                     obj.setLinearCoef(var_e[i][s1], d.sa_price);
                     positive_obj.setLinearCoef(var_e[i][s1], d.sa_price);
                 }
                 
-                for(auto t1 = 0; t1 < d.ni + 2; t1++) {
+                for(auto t1 = 1; t1 < d.ni + 1; t1++) {
                     if(d.v[i][s1][t1]) {
-                        for(const auto& s2 : d.fnetwork[s1]) {
+                        for(const auto& s2 : d.tnetwork[i][s1]) {
                             if(d.accessible[i][s2]) {
-                                for(auto t2 = 0; t2 < d.ni + 2; t2++) {
-                                    if(d.v[i][s2][t2]) {
-                                        if(s2 != s1 && d.adj[i][s1][t1][s2][t2]) {
-                                            coeff[i][s1][t1][s2][t2] += d.delay_price[d.tr_class[i]] * t1;
-                                        }
-                                        if(d.adj[i][s2][t2][s1][t1]) {
-                                            if(s2 != s1) {
-                                                coeff[i][s2][t2][s1][t1] -= d.delay_price[d.tr_class[i]] * (t1 + d.min_travel_time[i][s1] - 1);
-                                            }
-                                            auto eta = ((d.tr_westbound[i] && !d.seg_westbound[s1]) || (d.tr_eastbound[i] && !d.seg_eastbound[s1]));
-                                            if(eta) {
-                                                coeff[i][s2][t2][s1][t1] += d.unpreferred_price;
-                                            }
-                                        }
-                                    }
+                                if(d.v[i][s2][t1+1] && s2 != s1 && d.adj[i][s1][t1][s2][t1+1]) {
+                                    coeff[i][s1][t1][s2][t1+1] += d.delay_price[d.tr_class[i]] * t1;
+                                }
+                                if(d.v[i][s2][t1-1] && s2 != s1 && d.adj[i][s2][t1-1][s1][t1]) {
+                                    coeff[i][s2][t1-1][s1][t1] -= d.delay_price[d.tr_class[i]] * (t1 + d.min_travel_time[i][s1] - 1);
+                                }
+                            }
+                        }
+                        if(t1 < d.ni && d.adj[i][s1][t1][d.ns + 1][d.ni + 1]) {
+                            coeff[i][s1][t1][d.ns + 1][d.ni + 1] += d.delay_price[d.tr_class[i]] * t1;
+                        }
+                        if(t1 > 1 && d.adj[i][0][0][s1][t1]) {
+                            coeff[i][0][0][s1][t1] -= d.delay_price[d.tr_class[i]] * (t1 + d.min_travel_time[i][s1] - 1);
+                        }
+                    }
+                }
+            }
+        }
+        
+        for(auto s1 = 1; s1 < d.ns + 2; s1++) {
+            if(d.accessible[i][s1]) {
+                for(auto t1 = 1; t1 < d.ni + 2; t1++) {
+                    if(d.v[i][s1][t1]) {
+                        for(const auto& s2 : d.tnetwork[i][s1]) {
+                            if(d.accessible[i][s2] && d.v[i][s2][t1-1] && d.adj[i][s2][t1-1][s1][t1]) {
+                                auto eta = ((d.tr_westbound[i] && !d.seg_westbound[s1]) || (d.tr_eastbound[i] && !d.seg_eastbound[s1]));
+                                if(eta) {
+                                    coeff[i][s2][t1-1][s1][t1] += d.unpreferred_price;
                                 }
                             }
                         }
@@ -572,21 +587,39 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
             }
         }
     }
+    
+    t_end = high_resolution_clock::now();
+    time_span = duration_cast<duration<double>>(t_end - t_start);
+    
+    std::cout << "\t" << time_span.count() << " seconds" << std::endl;
+    
+    std::cout << "Setting objective function coefficients..." << std::endl;
+    t_start = high_resolution_clock::now();
         
     for(auto i = 0; i < d.nt; i++) {
         for(auto s1 = 0; s1 < d.ns + 2; s1++) {
             if(d.accessible[i][s1]) {
                 for(auto t1 = 0; t1 < d.ni + 2; t1++) {
                     if(d.v[i][s1][t1]) {
-                        for(const auto& s2 : d.fnetwork[s1]) {
+                        for(const auto& s2 : d.tnetwork[i][s1]) {
                             if(d.accessible[i][s2]) {
-                                for(auto t2 = 0; t2 < d.ni + 2; t2++) {
-                                    if(d.v[i][s2][t2] && d.adj[i][s1][t1][s2][t2] && std::abs(coeff[i][s1][t1][s2][t2]) > eps) {
-                                        obj.setLinearCoef(var_x[i][s1][t1][s2][t2], coeff[i][s1][t1][s2][t2]);
-                                        positive_obj.setLinearCoef(var_x[i][s1][t1][s2][t2], coeff[i][s1][t1][s2][t2]);
-                                    }
+                                if(d.v[i][s2][t1+1] && d.adj[i][s1][t1][s2][t1+1] && std::abs(coeff[i][s1][t1][s2][t1+1]) > eps) {
+                                    obj.setLinearCoef(var_x[i][s1][t1][s2][t1+1], coeff[i][s1][t1][s2][t1+1]);
+                                    positive_obj.setLinearCoef(var_x[i][s1][t1][s2][t1+1], coeff[i][s1][t1][s2][t1+1]);
+                                }
+                                if(d.v[i][s2][t1-1] && d.adj[i][s2][t1-1][s1][t1] && std::abs(coeff[i][s2][t1-1][s1][t1]) > eps) {
+                                    obj.setLinearCoef(var_x[i][s2][t1-1][s1][t1], coeff[i][s2][t1-1][s1][t1]);
+                                    positive_obj.setLinearCoef(var_x[i][s2][t1-1][s1][t1], coeff[i][s2][t1-1][s1][t1]);
                                 }
                             }
+                        }
+                        if(t1 < d.ni && d.adj[i][s1][t1][d.ns + 1][d.ni + 1] && std::abs(coeff[i][s1][t1][d.ns + 1][d.ni + 1]) > eps) {
+                            obj.setLinearCoef(var_x[i][s1][t1][d.ns + 1][d.ni + 1], coeff[i][s1][t1][d.ns + 1][d.ni + 1]);
+                            positive_obj.setLinearCoef(var_x[i][s1][t1][d.ns + 1][d.ni + 1], coeff[i][s1][t1][d.ns + 1][d.ni + 1]);
+                        }
+                        if(t1 > 1 && d.adj[i][0][0][s1][t1] && std::abs(coeff[i][0][0][s1][t1]) > eps) {
+                            obj.setLinearCoef(var_x[i][0][0][s1][t1], coeff[i][0][0][s1][t1]);
+                            positive_obj.setLinearCoef(var_x[i][0][0][s1][t1], coeff[i][0][0][s1][t1]);
                         }
                     }
                 }
@@ -629,7 +662,7 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                 }
                 for(auto t1 = 0; t1 < d.ni + 2; t1++) {
                     if(d.v[i][s1][t1]) {
-                        for(const auto& s2 : d.fnetwork[s1]) {
+                        for(const auto& s2 : d.tnetwork[i][s1]) {
                             if(d.accessible[i][s2]) {
                                 for(auto t2 = 0; t2 < d.ni + 2; t2++) {
                                     if(d.v[i][s2][t2] && d.adj[i][s1][t1][s2][t2]) {
