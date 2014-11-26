@@ -223,6 +223,13 @@ auto data::calculate_network() {
     bar_inverse_tnetwork = int_matrix_3d(nt, int_matrix(ns + 2));
     
     for(auto s1 = 0; s1 < ns + 2; s1++) {
+        if(seg_type[s1] == 'S') {
+            sidings.push_back(s1);
+        }
+        if(seg_type[s1] == 'X') {
+            xovers.push_back(s1);
+        }
+        
         for(auto i = 0; i < nt; i++) {
             tnetwork[i][s1].push_back(s1);
             inverse_tnetwork[i][s1].push_back(s1);
@@ -280,6 +287,7 @@ auto data::calculate_auxiliary_data() {
     max_time_to_leave_from = int_matrix(nt, ivec(ns + 2, -1));
     min_travel_time = int_matrix(nt, ivec(ns + 2, -1));
     max_travel_time = int_matrix(nt, ivec(ns + 2, -1));
+    unpreferred_segments = int_matrix(nt);
         
     for(auto i = 0; i < nt; i++) {
         tr_max_speed[i] = tr_speed_mult[i] * (tr_westbound[i] ? speed_ew : speed_we);
@@ -290,6 +298,10 @@ auto data::calculate_auxiliary_data() {
             
             min_time_to_arrive_at[i][s] = (tr_westbound[i] ? time_from_e : time_from_w) + tr_entry_time[i];
             max_time_to_leave_from[i][s] = (tr_westbound[i] ? (ni - time_from_w) : (ni - time_from_e));
+            
+            if((tr_westbound[i] && !seg_westbound[s]) || (tr_eastbound[i] && !seg_eastbound[s])) {
+                unpreferred_segments[i].push_back(s);
+            }
             
             auto speed = 0.0;
             auto speed_aux = 0.0;
@@ -320,14 +332,19 @@ auto data::calculate_auxiliary_data() {
     }
     
     is_main = indicator_matrix(ns + 2, bvec(ns + 2, false));
+    main_tracks = int_matrix(ns + 2);
         
     for(auto s = 1; s < ns + 1; s++) {
         for(auto m = 1; m < ns + 1; m++) {
-            is_main[s][m] = (
+            auto _is_main = (
                 seg_type[s] == 'S' &&
                 (seg_type[m] == '0' || seg_type[m] == '1' || seg_type[m] == '2') &&
                 (seg_e_ext[s] == seg_e_ext[m] || seg_w_ext[s] == seg_w_ext[m])
             );
+            is_main[s][m] = _is_main;
+            if(_is_main) {
+                main_tracks[s].push_back(m);
+            }
         }
     }
 }
@@ -408,7 +425,7 @@ auto data::generate_sigma_s_arcs() {
                 }
                 
                 if(v[i][0][t-1] && v[i][s][t]) {
-                    adj[i][0][t-1][s][t] = true;
+                    adj[i][0][t-1][s] = true;
                     n_out[i][0][t-1]++;
                     n_in[i][s][t]++;
                 }
@@ -437,7 +454,7 @@ auto data::generate_s_tau_arcs() {
                     }
                     
                     if(v[i][ns+1][t+1] && v[i][s][t]) {
-                        adj[i][s][t][ns+1][t+1] = true;
+                        adj[i][s][t][ns+1] = true;
                         n_out[i][s][t]++;
                         n_in[i][ns+1][t+1]++;
                     }
@@ -464,7 +481,7 @@ auto data::generate_stop_arcs() {
                     }
                     
                     if(v[i][s][t] && v[i][s][t+1]) {
-                        adj[i][s][t][s][t+1] = true;
+                        adj[i][s][t][s] = true;
                         n_out[i][s][t]++;
                         n_in[i][s][t+1]++;
                     }
@@ -506,7 +523,7 @@ auto data::generate_movement_arcs() {
                         }
                         
                         if(v[i][s1][t] && v[i][s2][t+1]) {
-                            adj[i][s1][t][s2][t+1] = true;
+                            adj[i][s1][t][s2] = true;
                             n_out[i][s1][t]++;
                             n_in[i][s2][t+1]++;
                         }
@@ -536,15 +553,13 @@ auto data::cleanup_adjacency() {
                             ((s1 == 0 || s1 == ns + 1) && (_in + _out == 0))
                         ) {                            
                             for(auto s2 = 0; s2 < ns + 2; s2++) {
-                                for(auto t2 = 0; t2 < ns + 2; t2++) {
-                                    if(adj[i][s1][t1][s2][t2]) {
-                                        adj[i][s1][t1][s2][t2] = false;
-                                        n_in[i][s2][t2]--;
-                                    }
-                                    if(adj[i][s2][t2][s1][t1]) {
-                                        adj[i][s2][t2][s1][t1] = false;
-                                        n_out[i][s2][t2]--;
-                                    }
+                                if(adj[i][s1][t1][s2]) {
+                                    adj[i][s1][t1][s2] = false;
+                                    n_in[i][s2][t1+1]--;
+                                }
+                                if(adj[i][s2][t1-1][s1]) {
+                                    adj[i][s2][t1-1][s1] = false;
+                                    n_out[i][s2][t1-1]--;
                                 }
                             }
                             n_in[i][s1][t1] = 0;
@@ -570,14 +585,20 @@ auto data::cleanup_adjacency() {
 }
 
 auto data::calculate_adjacency() {
-    adj = graph_adjacency_map(nt, indicator_matrix_4d(ns + 2, indicator_matrix_3d(ni + 2, indicator_matrix(ns + 2, bvec(ni + 2, false)))));
+    std::cout << "\t\t\tAllocating memory" << std::endl;
+    adj = graph_adjacency_map(nt, indicator_matrix_3d(ns + 2, indicator_matrix(ni + 2, bvec(ns + 2, false))));
     n_in = vertex_count_matrix(nt, int_matrix(ns + 2, ivec(ni + 2, 0)));
     n_out = vertex_count_matrix(nt, int_matrix(ns + 2, ivec(ni + 2, 0)));
     
+    std::cout << "\t\t\tSigma - s arcs" << std::endl;
     generate_sigma_s_arcs();
+    std::cout << "\t\t\tS - tau arcs" << std::endl;
     generate_s_tau_arcs();
+    std::cout << "\t\t\tStop arcs" << std::endl;
     generate_stop_arcs();
+    std::cout << "\t\t\tMovement arcs" << std::endl;
     generate_movement_arcs();
+    std::cout << "\t\t\tClean-up" << std::endl;
     cleanup_adjacency();
 }
 
@@ -587,10 +608,8 @@ auto data::print_adjacency() const {
         for(auto s1 = 0; s1 < ns + 2; s1++) {
             for(auto t1 = 0; t1 < ni + 2; t1++) {
                 for(auto s2 = 0; s2 < ns + 2; s2++) {
-                    for(auto t2 = 0; t2 < ni + 2; t2++) {
-                        if(adj[i][s1][t1][s2][t2]) {
-                            std::cout << "(" << s1 << "," << t1 << ") => (" << s2 << "," << t2 << ")" << std::endl;
-                        }
+                    if(adj[i][s1][t1][s2]) {
+                        std::cout << "(" << s1 << "," << t1 << ") => (" << s2 << "," << t1+1 << ")" << std::endl;
                     }
                 }
             }

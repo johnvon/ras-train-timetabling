@@ -14,9 +14,8 @@ using bvec = bv<bool>;
 using indicator_matrix = bv<bvec>;
 using indicator_matrix_3d = bv<indicator_matrix>;
 using indicator_matrix_4d = bv<indicator_matrix_3d>;
-using indicator_matrix_5d = bv<indicator_matrix_4d>;
 using vertices_map = indicator_matrix_3d;
-using graph_adjacency_map = indicator_matrix_5d;
+using graph_adjacency_map = indicator_matrix_4d;
 
 using ivec = bv<int>;
 using int_matrix = bv<ivec>;
@@ -82,7 +81,9 @@ struct data {
                         mow_start_times, // Mow start times
                         mow_end_times, // Mow end times
                         last_time_we_need_sigma, // Create sigma from 0 to this time
-                        first_time_we_need_tau; // Create taut from this time to ni+1
+                        first_time_we_need_tau, // Create taut from this time to ni+1
+                        sidings, // List of sidings
+                        xovers; // List of cross-overs
 
     dvec                seg_e_min_dist, // Min distance from east terminal to segment
                         seg_w_min_dist, // Min distance from west terminal to segment
@@ -120,7 +121,9 @@ struct data {
                         min_time_to_arrive_at, // ((train, segment) => time) minimum time for <train> to reach <segment> from the origin terminal
                         max_time_to_leave_from, // ((train, segment) => time) maximum time for <train> to leave <segment> to the destination terminal
                         min_travel_time, // ((train, segment) => time) minimum travel time on <segment> for <train>
-                        max_travel_time; // ((train, segment) => time) maximum travel time on <segment> for <train> in order for the penalty to be < UB
+                        max_travel_time, // ((train, segment) => time) maximum travel time on <segment> for <train> in order for the penalty to be < UB
+                        main_tracks, // (segment => segment1, ...) list of mains if <segment> is a siding, or an empty list
+                        unpreferred_segments; // (train => segment1, ...) list of unpreferred segments for <train>
     
     int_matrix_3d       tnetwork, // ((train, segment) => segment1, ...) list of segments connected to <segment> in <train>'s direction [includes itself]
                         inverse_tnetwork, // ((train, segment) => segment1, ...) list of segments s.c. <segment> is connected to them in <train>'s direction [include itself]
@@ -133,7 +136,7 @@ struct data {
     vertex_count_matrix n_in, // ((train, segment, time) => n) is the number of arcs going into the vertex
                         n_out; // ((train, segment, time) => n) is the number of arcs going out of the vertex
 
-    graph_adjacency_map adj; // ((train, segment1, time1, segment2, time2) => bool) is the adjacency matrix of the graph of <train>
+    graph_adjacency_map adj; // ((train, segment1, time1, segment2, [time1 + 1]) => bool) is the adjacency matrix of the graph of <train>
 
     data(const std::string& file_name);
 

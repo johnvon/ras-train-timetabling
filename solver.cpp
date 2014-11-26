@@ -4,11 +4,6 @@
 #include <chrono>
 #include <sstream>
 
-auto solver::real_node(auto s, auto t) const {
-    return (s > 0 && s <= d.ns && t > 0 && t <= d.ni);
-}
-
-
 void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const {
     using namespace std::chrono;
     high_resolution_clock::time_point t_start, t_end;
@@ -22,6 +17,7 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
     var_matrix_4d var_x(env, d.nt);
     var_vector var_d(env, d.nt);
     var_matrix_2d var_e(env, d.nt);
+    var_matrix_2d var_travel_time(env, d.nt);
     
     std::stringstream name;
         
@@ -37,9 +33,13 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
         var_d[i] = IloNumVar(env, 0.0, ub_d, IloNumVar::Int, name.str().c_str());
         
         var_e[i] = IloNumVarArray(env, d.ns + 2);
+        var_travel_time[i] = IloNumVarArray(env, d.ns + 2);
         
         for(auto s1 = 0; s1 < d.ns + 2; s1++) {
             var_x[i][s1] = var_matrix_2d(env, d.ni + 2);
+            
+            name.str(""); name << "var_travel_time_" << i << "_" << s1;
+            var_travel_time[i][s1] = IloNumVar(env, 0, d.max_travel_time[i][s1], IloNumVar::Int, name.str().c_str());
             
             if(d.sa[i][s1]) {
                 name.str(""); name << "var_e_" << i << "_" << s1;
@@ -50,7 +50,7 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
             for(auto t = 0; t < d.ni + 1; t++) {
                 var_x[i][s1][t] = IloNumVarArray(env, d.ns + 2);
                 for(auto s2 = 0; s2 < d.ns + 2; s2++) {
-                    if(d.adj[i][s1][t][s2][t+1]) {
+                    if(d.adj[i][s1][t][s2]) {
                         name.str(""); name << "var_x_" << i << "_" << s1 << "_" << t << "_" << s2;
                         var_x[i][s1][t][s2] = IloNumVar(env, 0, 1, IloNumVar::Bool, name.str().c_str());
                     }
@@ -83,7 +83,8 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
     cst_matrix_3d cst_siding(env, d.nt);
     cst_matrix_3d cst_cant_stop(env, d.nt);
     cst_matrix_3d cst_heavy(env, d.nt);
-    IloRange positive_obj(env, 0, IloInfinity, "positive_obj");
+    cst_matrix_2d cst_set_travel_time(env, d.nt);
+    IloRange cst_positive_obj(env, 0, IloInfinity, "cst_positive_obj");
 
     std::cout << "Adding constraints..." << std::endl;
     t_start = high_resolution_clock::now();
@@ -94,7 +95,7 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
         
         for(auto s : d.tr_orig_seg[i]) {
             for(auto t = 0; t <= d.max_time_to_leave_from[i][s] - d.min_travel_time[i][s] - 1; t++) {
-                if(d.adj[i][0][t][s][t+1]) {
+                if(d.adj[i][0][t][s]) {
                     cst_exit_sigma[i].setLinearCoef(var_x[i][0][t][s], 1);
                 }
             }
@@ -105,18 +106,29 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
         
         for(auto s : d.tr_dest_seg[i]) {
             for(auto t = d.min_time_to_arrive_at[i][s] + d.min_travel_time[i][s] - 1; t <= d.ni; t++) {
-                if(d.adj[i][s][t][d.ns+1][t+1]) {
+                if(d.adj[i][s][t][d.ns+1]) {
                     cst_enter_tau[i].setLinearCoef(var_x[i][s][t][d.ns+1], 1);
                 }
             }
         }
         
         cst_flow[i] = cst_matrix_2d(env, d.ns + 2);
-        cst_min_travel_time[i] = cst_matrix_2d(env, d.ns + 2);
+        
+        if(use_alt_min_travel_time) {
+            cst_alt_min_travel_time[i] = cst_vector(env, d.ns + 2);
+        } else {
+            cst_min_travel_time[i] = cst_matrix_2d(env, d.ns + 2);
+        }
         
         for(auto s = 1; s < d.ns + 1; s++) {
             cst_flow[i][s] = cst_vector(env, d.ni + 2);
-            cst_min_travel_time[i][s] = cst_vector(env, d.ni + 2);
+            
+            if(use_alt_min_travel_time) {
+                name.str(""); name << "cst_alt_min_travel_time_" << i << "_" << s;
+                cst_alt_min_travel_time[i][s] = IloRange(env, -IloInfinity, 0, name.str().c_str());
+            } else {
+                cst_min_travel_time[i][s] = cst_vector(env, d.ni + 2);
+            }
             
             for(auto t = d.min_time_to_arrive_at[i][s]; t <= d.max_time_to_leave_from[i][s]; t++) {
                 if(d.v[i][s][t]) {
@@ -124,39 +136,70 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                     cst_flow[i][s][t] = IloRange(env, 0, 0, name.str().c_str());
                     
                     for(auto ss : d.inverse_tnetwork[i][s]) {
-                        if(d.adj[i][ss][t-1][s][t]) {
+                        if(d.adj[i][ss][t-1][s]) {
                             cst_flow[i][s][t].setLinearCoef(var_x[i][ss][t-1][s], 1);
                         }
                     }
                     
                     for(auto ss : d.tnetwork[i][s]) {
-                        if(d.adj[i][s][t][ss][t+1]) {
+                        if(d.adj[i][s][t][ss]) {
                             cst_flow[i][s][t].setLinearCoef(var_x[i][s][t][ss], -1);
                         }
                     }
                 }
             }
             
-            for(auto t = d.min_time_to_arrive_at[i][s]; t <= d.max_time_to_leave_from[i][s] - d.min_travel_time[i][s]; t++) {
-                if(d.v[i][s][t]) {
-                    name.str(""); name << "cst_min_travel_time_" << i << "_" << s << "_" << t;
-                    cst_min_travel_time[i][s][t] = IloRange(env, -IloInfinite, 1, name.str().c_str());
-                    
-                    for(auto ss : d.bar_inverse_tnetwork[i][s]) {
-                        if(d.adj[i][ss][t-1][s][t]) {
-                            cst_min_travel_time[i][s][t].setLinearCoef(var_x[i][ss][t-1][s], 1);
+            if(use_alt_min_travel_time) {
+                for(auto t = d.min_time_to_arrive_at[i][s]; t <= d.max_time_to_leave_from[i][s] - 1; t++) {
+                    if(d.adj[i][s][t][s]) {
+                        cst_alt_min_travel_time[i][s].setLinearCoef(var_x[i][s][t][s], -1);
+                    }
+                }
+                
+                for(auto ss : d.bar_inverse_tnetwork[i][s]) {
+                    for(auto t = d.min_time_to_arrive_at[i][s]; t <= d.max_time_to_leave_from[i][s]; t++) {
+                        if(d.adj[i][ss][t-1][s]) {
+                            cst_alt_min_travel_time[i][s].setLinearCoef(var_x[i][ss][t-1][s], d.min_travel_time[i][s] - 1);
                         }
                     }
+                }
+            } else {
+                for(auto t = d.min_time_to_arrive_at[i][s]; t <= d.max_time_to_leave_from[i][s] - d.min_travel_time[i][s]; t++) {
+                    if(d.v[i][s][t]) {
+                        name.str(""); name << "cst_min_travel_time_" << i << "_" << s << "_" << t;
+                        cst_min_travel_time[i][s][t] = IloRange(env, -IloInfinity, 1, name.str().c_str());
                     
-                    auto top_time = std::min(t + d.min_travel_time[i][s] + 1, d.ni + 1);
-                    for(auto tt = t; tt < top_time; tt++) {
-                        for(auto ss : d.bar_tnetwork[i][s]) {
-                            if(d.adj[i][s][tt][ss][tt+1]) {
-                                cst_min_travel_time[i][s][t].setLinearCoef(var_x[i][s][tt][ss], 1);
+                        for(auto ss : d.bar_inverse_tnetwork[i][s]) {
+                            if(d.adj[i][ss][t-1][s]) {
+                                cst_min_travel_time[i][s][t].setLinearCoef(var_x[i][ss][t-1][s], 1);
+                            }
+                        }
+                    
+                        for(auto tt = t; tt < t + d.min_travel_time[i][s] + 1; tt++) {
+                            for(auto ss : d.bar_tnetwork[i][s]) {
+                                if(d.adj[i][s][tt][ss]) {
+                                    cst_min_travel_time[i][s][t].setLinearCoef(var_x[i][s][tt][ss], 1);
+                                }
+                            }
+                        }
+                        
+                        if(use_max_travel_time) {
+                            for(auto tt = t + d.max_travel_time[i][s] + 1; tt <= d.max_time_to_leave_from[i][s]; tt++) {
+                                for(auto ss : d.bar_tnetwork[i][s]) {
+                                    if(d.adj[i][s][tt][ss]) {
+                                        cst_min_travel_time[i][s][t].setLinearCoef(var_x[i][s][tt][ss], 1);
+                                    }
+                                }
                             }
                         }
                     }
                 }
+                
+                model.add(cst_min_travel_time[i][s]);
+            }
+            
+            if(use_alt_min_travel_time) {
+                model.add(cst_alt_min_travel_time[i]);
             }
             
             model.add(cst_flow[i][s]);
@@ -175,7 +218,7 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
         
         for(auto s : d.tr_dest_seg[i]) {
             for(auto t = d.min_time_to_arrive_at[i][s] + d.min_travel_time[i][s] - 1; t <= d.ni; t++) {
-                if(d.adj[i][s][t][d.ns+1][t+1]) {
+                if(d.adj[i][s][t][d.ns+1]) {
                     cst_wt_delay_1[i].setLinearCoef(var_x[i][s][t][d.ns+1], t);
                     cst_wt_delay_2[i].setLinearCoef(var_x[i][s][t][d.ns+1], t);
                 }
@@ -198,7 +241,7 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                 
                 for(auto ss : d.bar_inverse_tnetwork[i][s]) {
                     for(auto t = d.min_time_to_arrive_at[i][s]; t <= d.max_time_to_leave_from[i][s]; t++) {
-                        if(d.adj[i][ss][t-1][s][t]) {
+                        if(d.adj[i][ss][t-1][s]) {
                             cst_visit_sa[i][s].setLinearCoef(var_x[i][ss][t-1][s], 1);
                             cst_sa_delay[i][s].setLinearCoef(var_x[i][ss][t-1][s], t);
                         }
@@ -209,6 +252,197 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
             model.add(cst_visit_sa[i]);
             model.add(cst_sa_delay[i]);
         }
+        
+        cst_headway_1[i] = cst_matrix_2d(env, d.ns + 2);
+        cst_headway_2[i] = cst_matrix_2d(env, d.ns + 2);
+        cst_headway_3[i] = cst_matrix_2d(env, d.ns + 2);
+        cst_headway_4[i] = cst_matrix_2d(env, d.ns + 2);
+        
+        for(auto s = 1; s < d.ns + 1; s++) {
+            cst_headway_1[i][s] = cst_vector(env, d.ni + 2);
+            cst_headway_2[i][s] = cst_vector(env, d.ni + 2);
+            cst_headway_3[i][s] = cst_vector(env, d.ni + 2);
+            cst_headway_4[i][s] = cst_vector(env, d.ni + 2);
+            
+            for(auto t = d.min_time_to_arrive_at[i][s]; t <= d.max_time_to_leave_from[i][s]; t++) {
+                name.str(""); name << "cst_headway_1_" << i << "_" << s << "_" << t;
+                cst_headway_1[i][s][t] = IloRange(env, -IloInfinity, 1, name.str().c_str());
+                name.str(""); name << "cst_headway_2_" << i << "_" << s << "_" << t;
+                cst_headway_2[i][s][t] = IloRange(env, -IloInfinity, 1, name.str().c_str());
+                name.str(""); name << "cst_headway_3_" << i << "_" << s << "_" << t;
+                cst_headway_3[i][s][t] = IloRange(env, -IloInfinity, 1, name.str().c_str());
+                name.str(""); name << "cst_headway_4_" << i << "_" << s << "_" << t;
+                cst_headway_4[i][s][t] = IloRange(env, -IloInfinity, 1, name.str().c_str());
+                
+                for(auto ss : d.bar_inverse_tnetwork[i][s]) {
+                    if(d.adj[i][ss][t-1][s]) {
+                        cst_headway_1[i][s][t].setLinearCoef(var_x[i][ss][t-1][s], 1);
+                        cst_headway_2[i][s][t].setLinearCoef(var_x[i][ss][t-1][s], 1);
+                    }
+                }
+                
+                for(auto ss : d.bar_tnetwork[i][s]) {
+                    if(d.adj[i][s][t][ss]) {
+                        cst_headway_3[i][s][t].setLinearCoef(var_x[i][s][t][ss], 1);
+                        cst_headway_4[i][s][t].setLinearCoef(var_x[i][s][t][ss], 1);
+                    }
+                }
+                
+                for(auto j = 0; j < d.nt; j++) {
+                    if(j != i) {
+                        for(auto ss : d.bar_inverse_tnetwork[j][s]) {
+                            for(auto tt = t - d.headway; tt <= t - 1; t++) {
+                                if(d.adj[j][ss][tt-1][s]) {
+                                    cst_headway_1[i][s][t].setLinearCoef(var_x[j][ss][tt-1][s], 1);
+                                }
+                            }
+                            
+                            for(auto tt = t + 1; tt <= t + d.headway; tt++) {
+                                if(d.adj[j][ss][tt-1][s]) {
+                                    cst_headway_3[i][s][t].setLinearCoef(var_x[j][ss][tt-1][s], 1);
+                                }
+                            }
+                        }
+                        
+                        for(auto ss : d.bar_tnetwork[j][s]) {
+                            for(auto tt = t - d.headway; tt <= t - 1; t++) {
+                                if(d.adj[j][s][tt][ss]) {
+                                    cst_headway_2[i][s][t].setLinearCoef(var_x[j][s][tt][ss], 1);
+                                }
+                            }
+                            
+                            for(auto tt = t + 1; tt <= t + d.headway; tt++) {
+                                if(d.adj[j][s][tt][ss]) {
+                                    cst_headway_4[i][s][t].setLinearCoef(var_x[j][s][tt][ss], 1);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            model.add(cst_headway_1[i][s]);
+            model.add(cst_headway_2[i][s]);
+            model.add(cst_headway_3[i][s]);
+            model.add(cst_headway_4[i][s]);
+        }
+        
+        cst_siding[i] = cst_matrix_2d(env, d.ns + 2);
+        
+        for(auto s : d.sidings) {
+            cst_siding[i][s] = cst_vector(env, d.ni + 2);
+            
+            for(auto t = d.min_time_to_arrive_at[i][s]; t <= d.max_time_to_leave_from[i][s]; t++) {
+                name.str(""); name << "cst_siding_" << i << "_" << s << "_" << t;
+                cst_siding[i][s][t] = IloRange(env, 0, IloInfinity, name.str().c_str());
+                
+                for(auto ss : d.bar_inverse_tnetwork[i][s]) {
+                    if(d.adj[i][ss][t-1][s]) {
+                        cst_siding[i][s][t].setLinearCoef(var_x[i][ss][t-1][s], -1);
+                    }
+                }
+                
+                for(auto j = 0; j < d.nt; j++) {
+                    if(j != i) {
+                        for(auto tt = t - d.headway; tt <= t + d.headway; tt++) {
+                            for(auto ss1 : d.main_tracks[s]) {
+                                for(auto ss2 : d.bar_inverse_tnetwork[j][ss1]) {
+                                    if(d.adj[j][ss2][tt-1][ss1]) {
+                                        cst_siding[i][s][t].setLinearCoef(var_x[j][ss2][tt-1][ss1], 1);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            model.add(cst_siding[i][s]);
+        }
+        
+        cst_cant_stop[i] = cst_matrix_2d(env, d.ns + 2);
+        
+        for(auto s : d.xovers) {
+            cst_cant_stop[i][s] = cst_vector(env, d.ni + 2);
+            
+            for(auto t = d.min_time_to_arrive_at[i][s]; t <= d.max_time_to_leave_from[i][s] - d.min_travel_time[i][s]; t++) {
+                name.str(""); name << "cst_cant_stop_" << i << "_" << s << "_" << t;
+                cst_cant_stop[i][s][t] = IloRange(env, -IloInfinity, 1, name.str().c_str());
+                
+                for(auto ss : d.bar_inverse_tnetwork[i][s]) {
+                    if(d.adj[i][ss][t-1][s]) {
+                        cst_cant_stop[i][s][t].setLinearCoef(var_x[i][ss][t-1][s], 1);
+                    }
+                }
+                
+                for(auto ss : d.bar_tnetwork[i][s]) {
+                    for(auto tt = t + d.min_travel_time[i][s]; tt <= d.max_time_to_leave_from[i][s]; tt++) {
+                        if(d.adj[i][s][tt][ss]) {
+                            cst_cant_stop[i][s][t].setLinearCoef(var_x[i][s][tt][ss], 1);
+                        }
+                    }
+                }
+            }
+            
+            model.add(cst_cant_stop[i][s]);
+        }
+        
+        if(d.tr_heavy[i]) {
+            cst_heavy[i] = cst_matrix_2d(env, d.ns + 2);
+            
+            for(auto s : d.sidings) {
+                cst_heavy[i][s] = cst_vector(env, d.ni + 2);
+                
+                for(auto t = d.min_time_to_arrive_at[i][s]; t <= d.max_time_to_leave_from[i][s]; t++) {
+                    name.str(""); name << "cst_heavy_" << i << "_" << s << "_" << t;
+                    cst_heavy[i][s][t] = IloRange(env, -IloInfinity, 1, name.str().c_str());
+                    
+                    for(auto ss : d.bar_inverse_tnetwork[i][s]) {
+                        if(d.adj[i][ss][t-1][s]) {
+                            cst_heavy[i][s][t].setLinearCoef(var_x[i][ss][t-1][s], 1);
+                        }
+                    }
+                    
+                    for(auto j = 0; j < d.nt; j++) {
+                        if(j != i && !d.tr_sa[j]) {
+                            for(auto ss1 : d.main_tracks[s]) {
+                                for(auto ss2 : d.bar_inverse_tnetwork[j][ss1]) {
+                                    if(d.adj[j][ss2][t-1][ss1]) {
+                                        cst_heavy[i][s][t].setLinearCoef(var_x[j][ss2][t-1][ss1], 1);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                model.add(cst_heavy[i][s]);
+            }
+        }
+        
+        cst_set_travel_time[i] = cst_vector(env, d.ns + 2);
+        
+        for(auto s = 1; s < d.ns + 1; s++) {
+            name.str(""); name << "cst_set_travel_time_" << i << "_" << s;
+            cst_set_travel_time[i][s] = IloRange(env, 0, 0, name.str().c_str());
+            
+            cst_set_travel_time[i][s].setLinearCoef(var_travel_time[i][s], 1);
+            
+            for(auto t = d.min_time_to_arrive_at[i][s]; t <= d.max_time_to_leave_from[i][s]; t++) {
+                for(auto ss : d.bar_tnetwork[i][s]) {
+                    if(d.adj[i][s][t][ss]) {
+                        cst_set_travel_time[i][s].setLinearCoef(var_x[i][s][t][ss], -t);
+                    }
+                }
+                for(auto ss : d.bar_inverse_tnetwork[i][s]) {
+                    if(d.adj[i][ss][t-1][s]) {
+                        cst_set_travel_time[i][s].setLinearCoef(var_x[i][ss][t-1][s], t + d.min_travel_time[i][s] - 1);
+                    }
+                }
+            }
+        }
+        
+        model.add(cst_set_travel_time[i]);
     }
     
     for(auto s = 1; s < d.ns + 1; s++) {
@@ -224,7 +458,7 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
             
                 for(auto i : d.trains_for[s][t]) {
                     for(auto ss : d.inverse_tnetwork[i][s]) {
-                        if(d.adj[i][ss][t-1][s][t]) {
+                        if(d.adj[i][ss][t-1][s]) {
                             cst_max_one_train[s][t].setLinearCoef(var_x[i][ss][t-1][s], 1);
                         }
                     }
@@ -248,10 +482,36 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
     std::cout << "Setting objective function coefficients..." << std::endl;
     t_start = high_resolution_clock::now();
 
-    // ...
+    for(auto i = 0; i < d.nt; i++) {
+        obj.setLinearCoef(var_d[i], d.wt_price);
+        cst_positive_obj.setLinearCoef(var_d[i], d.wt_price);
+        
+        for(auto s = 1; s < d.ns + 1; s++) {
+            obj.setLinearCoef(var_travel_time[i][s], d.delay_price[d.tr_class[i]]);
+            cst_positive_obj.setLinearCoef(var_travel_time[i][s], d.delay_price[d.tr_class[i]]);
+        }
+        
+        if(d.tr_sa[i]) {
+            for(auto s : d.sa_seg[i]) {
+                obj.setLinearCoef(var_e[i][s], d.sa_price);
+                cst_positive_obj.setLinearCoef(var_e[i][s], d.sa_price);
+            }
+        }
+        
+        for(auto s : d.unpreferred_segments[i]) {
+            for(auto t = d.min_time_to_arrive_at[i][s]; t <= d.max_time_to_leave_from[i][s]; t++) {
+                for(auto ss : d.inverse_tnetwork[i][s]) {
+                    if(d.adj[i][ss][t-1][s]) {
+                        obj.setLinearCoef(var_x[i][ss][t-1][s], d.unpreferred_price);
+                        cst_positive_obj.setLinearCoef(var_x[i][ss][t-1][s], d.unpreferred_price);
+                    }
+                }
+            }
+        }
+    }
 
     model.add(obj);
-    model.add(positive_obj);
+    model.add(cst_positive_obj);
 
     t_end = high_resolution_clock::now();
     time_span = duration_cast<duration<double>>(t_end - t_start);
