@@ -11,7 +11,6 @@ using var_vector = IloNumVarArray;
 using var_matrix_2d = IloArray<var_vector>;
 using var_matrix_3d = IloArray<var_matrix_2d>;
 using var_matrix_4d = IloArray<var_matrix_3d>;
-using var_matrix_5d = IloArray<var_matrix_4d>;
 
 using cst_vector = IloRangeArray;
 using cst_matrix_2d = IloArray<cst_vector>;
