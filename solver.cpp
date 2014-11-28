@@ -344,7 +344,7 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                 
                 for(auto j = 0; j < d.nt; j++) {
                     if(j != i) {
-                        for(auto tt = t - d.headway; tt <= t + d.headway; tt++) {
+                        for(auto tt = std::max(1, t - d.headway); tt <= std::min(d.ni, t + d.headway); tt++) {
                             for(auto ss1 : d.main_tracks[s]) {
                                 for(auto ss2 : d.bar_inverse_tnetwork[j][ss1]) {
                                     if(d.adj[j][ss2][tt-1][ss1]) {
