@@ -580,8 +580,6 @@ auto data::cleanup_adjacency() {
             }
         }
     }
-    
-    
 }
 
 auto data::calculate_adjacency() {
