@@ -553,11 +553,11 @@ auto data::cleanup_adjacency() {
                             ((s1 == 0 || s1 == ns + 1) && (_in + _out == 0))
                         ) {                            
                             for(auto s2 = 0; s2 < ns + 2; s2++) {
-                                if(adj[i][s1][t1][s2]) {
+                                if(t1 < ni + 1 && adj[i][s1][t1][s2]) {
                                     adj[i][s1][t1][s2] = false;
                                     n_in[i][s2][t1+1]--;
                                 }
-                                if(adj[i][s2][t1-1][s1]) {
+                                if(t1 > 0 && adj[i][s2][t1-1][s1]) {
                                     adj[i][s2][t1-1][s1] = false;
                                     n_out[i][s2][t1-1]--;
                                 }
