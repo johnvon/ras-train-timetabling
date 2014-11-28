@@ -263,7 +263,7 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
             cst_headway_2[i][s] = cst_vector(env, d.ni + 2);
             cst_headway_3[i][s] = cst_vector(env, d.ni + 2);
             cst_headway_4[i][s] = cst_vector(env, d.ni + 2);
-            
+                        
             for(auto t = d.min_time_to_arrive_at[i][s]; t <= d.max_time_to_leave_from[i][s]; t++) {
                 name.str(""); name << "cst_headway_1_" << i << "_" << s << "_" << t;
                 cst_headway_1[i][s][t] = IloRange(env, -IloInfinity, 1, name.str().c_str());
@@ -273,7 +273,7 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                 cst_headway_3[i][s][t] = IloRange(env, -IloInfinity, 1, name.str().c_str());
                 name.str(""); name << "cst_headway_4_" << i << "_" << s << "_" << t;
                 cst_headway_4[i][s][t] = IloRange(env, -IloInfinity, 1, name.str().c_str());
-                
+                                
                 for(auto ss : d.bar_inverse_tnetwork[i][s]) {
                     if(d.adj[i][ss][t-1][s]) {
                         cst_headway_1[i][s][t].setLinearCoef(var_x[i][ss][t-1][s], 1);
@@ -291,7 +291,7 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                 for(auto j = 0; j < d.nt; j++) {
                     if(j != i) {
                         for(auto ss : d.bar_inverse_tnetwork[j][s]) {
-                            for(auto tt = std::max(1, t - d.headway); tt <= t - 1; t++) {
+                            for(auto tt = std::max(1, t - d.headway); tt <= t - 1; tt++) {
                                 if(d.adj[j][ss][tt-1][s]) {
                                     cst_headway_1[i][s][t].setLinearCoef(var_x[j][ss][tt-1][s], 1);
                                 }
@@ -305,7 +305,7 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                         }
                         
                         for(auto ss : d.bar_tnetwork[j][s]) {
-                            for(auto tt = std::max(0, t - d.headway); tt <= t - 1; t++) {
+                            for(auto tt = std::max(0, t - d.headway); tt <= t - 1; tt++) {
                                 if(d.adj[j][s][tt][ss]) {
                                     cst_headway_2[i][s][t].setLinearCoef(var_x[j][s][tt][ss], 1);
                                 }
