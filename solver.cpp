@@ -9,7 +9,7 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
     high_resolution_clock::time_point t_start, t_end;
     duration<double> time_span;
     
-    // double eps = 1e-6;
+    double eps = 1e-6;
     
     IloEnv env;
     IloModel model(env);
@@ -522,71 +522,61 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
 
     cplex.exportModel("model.lp");
 
-    cplex.solve();
+    if(!cplex.solve()) {
+        std::cout << "Cplex status: " << cplex.getStatus() << " " << cplex.getCplexStatus() << std::endl;
+        return;
+    }
 
-//     if(!cplex.solve()) {
-//         std::cout << "Cplex status: " << cplex.getStatus() << " " << cplex.getCplexStatus() << std::endl;
-//         return;
-//     }
-//
-//     std::cout << "Cplex optimal value: " << cplex.getObjValue() << std::endl;
-//
-//     auto x = int_matrix_5d(d.nt, int_matrix_4d(d.ns + 2, int_matrix_3d(d.ni + 2, int_matrix(d.ns + 2, ivec(d.ni + 2, 0)))));
-//     for(auto i = 0; i < d.nt; i++) {
-//         auto dv = cplex.getValue(var_d[i]);
-//         if(dv > eps) {
-//             std::cout << "d[" << i << "]: " << dv << std::endl;
-//         }
-//         for(auto s1 = 0; s1 < d.ns + 2; s1++) {
-//             if(d.accessible[i][s1]) {
-//                 if(d.sa[i][s1]) {
-//                     auto ev = cplex.getValue(var_e[i][s1]);
-//                     if(ev > eps) {
-//                         std::cout << "e[" << i << "][" << s1 << "]: " << ev << std::endl;
-//                     }
-//                 }
-//                 for(auto t1 = 0; t1 < d.ni + 2; t1++) {
-//                     if(d.v[i][s1][t1]) {
-//                         for(const auto& s2 : d.tnetwork[i][s1]) {
-//                             if(d.accessible[i][s2]) {
-//                                 for(auto t2 = 0; t2 < d.ni + 2; t2++) {
-//                                     if(d.v[i][s2][t2] && d.adj[i][s1][t1][s2][t2]) {
-//                                         auto xv = cplex.getValue(var_x[i][s1][t1][s2][t2]);
-//                                         if(xv > eps) {
-//                                             x[i][s1][t1][s2][t2] = 1;
-//                                         }
-//                                     }
-//                                 }
-//                             }
-//                         }
-//                     }
-//                 }
-//             }
-//         }
-//     }
-//
-//     for(auto i = 0; i < d.nt; i++) {
-//         std::cout << std::endl << "Train #" << i << std::endl;
-//         auto current_seg = 0, current_time = 0;
-//
-//         restart:
-//         while(current_seg != d.ns + 1) {
-//             for(auto s = 0; s < d.ns + 2; s++) {
-//                 for(auto t = 0; t < d.ni + 2; t++) {
-//                     if(x[i][current_seg][current_time][s][t] == 1) {
-//                         if(s != current_seg) {
-//                             if(s != d.ns + 1) {
-//                                 std::cout << "\tReaches segment (" << d.seg_w_ext[s] << ", " << d.seg_e_ext[s] << ")[" << d.seg_type[s] << "] at time " << t << std::endl;
-//                             }
-//                             current_seg = s;
-//                         }
-//                         current_time = t;
-//                         goto restart;
-//                     }
-//                 }
-//             }
-//         }
-//     }
+    std::cout << "Cplex optimal value: " << cplex.getObjValue() << std::endl;
+    
+    auto x = int_matrix_4d(d.nt, int_matrix_3d(d.ns + 2, int_matrix(d.ni + 2, ivec(d.ns + 2, 0))));
+    
+    for(auto i = 0; i < d.nt; i++) {
+        std::cout << "Train " << i << std::endl;
+        auto dv = cplex.getValue(var_d[i]);
+        if(dv > eps) {
+            std::cout << "\tArrived at its terminal " << dv << " time units outside its time window" << std::endl;
+        } else {
+            std::cout << "\tArrived at its terminal within the time window" << std::endl;
+        }
+        
+        for(auto s = 0; s < d.ns + 2; s++) {
+            if(d.sa[i][s]) {
+                auto ev = cplex.getValue(var_e[i][s]);
+                if(ev > eps) {
+                    std::cout << "\tArrived at its SA segment " << s << ", " << ev << " time units after its time window" << std::endl;
+                } else {
+                    std::cout << "\tArrived at its SA segment " << s << " within its time window" << std::endl;
+                }
+            }
+        }
+        
+        for(auto s = 1; s < d.ns + 1; s++) {
+            auto ttv = cplex.getValue(var_travel_time[i][s]);
+            if(ttv > eps) {
+                std::cout << "\tRan on segment " << s << " for " << ttv << " time units more than the minimum travel time" << std::endl;
+            } else {
+                std::cout << "\tRan on segment " << s << " in the minimum possible time, or didn't run there at all" << std::endl;
+            }
+            
+            for(auto t = 1; t < d.ni + 2; t++) {
+                for(auto ss = 0; ss < d.ns + 2; ss++) {
+                    if(d.adj[i][ss][t-1][s]) {
+                        auto xv = cplex.getValue(var_x[i][ss][t-1][s]);
+                        if(xv > eps) {
+                            std::cout << "\t\t" << (s == ss ? "[" : "") << "Came from " << (ss == 0 ? "sigma" : std::to_string(ss)) << " at time " << t-1 << " and arrived in " << s << " at time " << t << (s == ss ? "]" : "") << std::endl;
+                        }
+                    }
+                    if(d.adj[i][s][t][ss]) {
+                        auto xv = cplex.getValue(var_x[i][s][t][ss]);
+                        if(xv > eps) {
+                            std::cout << "\t\t" << (s == ss ? "[" : "") << "Left " << s << " at time " << t << " and arrived in " << (ss == d.ns + 1 ? "tau" : std::to_string(ss)) << " at time " << t+1 << (s == ss ? "]" : "") << std::endl;
+                        }
+                    }
+                }
+            }
+        }
+    }
     
     env.end();
 }
