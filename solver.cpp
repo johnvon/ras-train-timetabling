@@ -472,7 +472,7 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
     model.add(cst_exit_sigma);
     model.add(cst_enter_tau);
     model.add(cst_wt_delay_1);
-    model.add(cst_wt_delay_1);
+    model.add(cst_wt_delay_2);
 
     t_end = high_resolution_clock::now();
     time_span = duration_cast<duration<double>>(t_end - t_start);
