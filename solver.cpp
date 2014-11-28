@@ -291,13 +291,13 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                 for(auto j = 0; j < d.nt; j++) {
                     if(j != i) {
                         for(auto ss : d.bar_inverse_tnetwork[j][s]) {
-                            for(auto tt = t - d.headway; tt <= t - 1; t++) {
+                            for(auto tt = std::max(1, t - d.headway); tt <= t - 1; t++) {
                                 if(d.adj[j][ss][tt-1][s]) {
                                     cst_headway_1[i][s][t].setLinearCoef(var_x[j][ss][tt-1][s], 1);
                                 }
                             }
                             
-                            for(auto tt = t + 1; tt <= t + d.headway; tt++) {
+                            for(auto tt = t + 1; tt <= std::min(d.ni+1, t + d.headway); tt++) {
                                 if(d.adj[j][ss][tt-1][s]) {
                                     cst_headway_3[i][s][t].setLinearCoef(var_x[j][ss][tt-1][s], 1);
                                 }
@@ -305,13 +305,13 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                         }
                         
                         for(auto ss : d.bar_tnetwork[j][s]) {
-                            for(auto tt = t - d.headway; tt <= t - 1; t++) {
+                            for(auto tt = std::max(0, t - d.headway); tt <= t - 1; t++) {
                                 if(d.adj[j][s][tt][ss]) {
                                     cst_headway_2[i][s][t].setLinearCoef(var_x[j][s][tt][ss], 1);
                                 }
                             }
                             
-                            for(auto tt = t + 1; tt <= t + d.headway; tt++) {
+                            for(auto tt = t + 1; tt <= std::min(d.ni+1, t + d.headway); tt++) {
                                 if(d.adj[j][s][tt][ss]) {
                                     cst_headway_4[i][s][t].setLinearCoef(var_x[j][s][tt][ss], 1);
                                 }
