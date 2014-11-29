@@ -2,6 +2,8 @@
 *.slo
 *.lo
 *.o
+*.ii
+*.s
 
 # Compiled Dynamic libraries
 *.so
@@ -13,11 +15,9 @@
 *.a
 
 *.dSYM
-main
 .DS_Store
 
 Makefile
 ras
-model.lp
 
 *.lp
