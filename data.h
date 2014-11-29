@@ -110,7 +110,8 @@ struct data {
                         mow, // ((segment, time) => bool) is true if there is a mow at <segment> at time <time>
                         is_main, // ((segment1, segment2) => bool) is true if <segment1> is siding and <segment2> is its main
                         network, // ((segment1, segment2) => bool) is true if <segment1> and <segment2> are connected
-                        v_for_someone; // ((segment, time) => bool) is true if there is at least one train s.t. v(train, segment, time) == true
+                        v_for_someone, // ((segment, time) => bool) is true if there is at least one train s.t. v(train, segment, time) == true
+                        unpreferred; // ((train, segment) => bool) is true if <segment> is unpreferred for <train>
 
     int_matrix          tr_orig_seg, // Train's origin segment(s) (train => segment1, ...)
                         tr_dest_seg, // Train's destination segment(s) (train => segment1, ...)
@@ -130,13 +131,15 @@ struct data {
                         bar_tnetwork, // ((train, segment) => segment1, ...) list of segments connected to <segment> in <train>'s direction
                         bar_inverse_tnetwork, // ((train, segment) => segment1, ...) list of segments s.c. <segment> is connected to them in <train>'s direction
                         trains_for; // ((segment, time) => train1, ...) list of trains for which v(train, segment, time) == true
+    
+    double_matrix_4d    arc_cost; // ((train, segment1, time, segment2, [time + 1]) => double) is the cost matrix of the graph of <train>
                         
     vertices_map        v; // ((train, segment, time) => bool) is true if vertex (<train>, <segment>) is in <train>'s graph
     
     vertex_count_matrix n_in, // ((train, segment, time) => n) is the number of arcs going into the vertex
                         n_out; // ((train, segment, time) => n) is the number of arcs going out of the vertex
 
-    graph_adjacency_map adj; // ((train, segment1, time1, segment2, [time1 + 1]) => bool) is the adjacency matrix of the graph of <train>
+    graph_adjacency_map adj; // ((train, segment1, time, segment2, [time + 1]) => bool) is the adjacency matrix of the graph of <train>
 
     data(const std::string& file_name);
 
@@ -156,6 +159,7 @@ private:
     auto calculate_vertices();
     auto calculate_adjacency();
     auto calculate_accessible();
+    auto calculate_costs();
     
     auto generate_sigma_s_arcs();
     auto generate_s_tau_arcs();

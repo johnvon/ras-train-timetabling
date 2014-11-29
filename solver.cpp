@@ -17,7 +17,6 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
     var_matrix_4d var_x(env, d.nt);
     var_vector var_d(env, d.nt);
     var_matrix_2d var_e(env, d.nt);
-    var_matrix_2d var_travel_time(env, d.nt);
     
     std::stringstream name;
         
@@ -33,14 +32,10 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
         var_d[i] = IloNumVar(env, 0.0, ub_d, IloNumVar::Int, name.str().c_str());
         
         var_e[i] = IloNumVarArray(env, d.ns + 2);
-        var_travel_time[i] = IloNumVarArray(env, d.ns + 2);
         
         for(auto s1 = 0; s1 < d.ns + 2; s1++) {
             var_x[i][s1] = var_matrix_2d(env, d.ni + 2);
-            
-            name.str(""); name << "var_travel_time_" << i << "_" << s1;
-            var_travel_time[i][s1] = IloNumVar(env, 0, d.max_travel_time[i][s1], IloNumVar::Int, name.str().c_str());
-            
+                        
             if(d.sa[i][s1]) {
                 name.str(""); name << "var_e_" << i << "_" << s1;
                 auto ub_e = std::max(d.sa_times[i][s1], d.ni - d.sa_times[i][s1]);
@@ -83,7 +78,6 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
     cst_matrix_3d cst_siding(env, d.nt);
     cst_matrix_3d cst_cant_stop(env, d.nt);
     cst_matrix_3d cst_heavy(env, d.nt);
-    cst_matrix_2d cst_set_travel_time(env, d.nt);
     IloRange cst_positive_obj(env, 0, IloInfinity, "cst_positive_obj");
 
     std::cout << "Adding constraints..." << std::endl;
@@ -419,30 +413,6 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                 model.add(cst_heavy[i][s]);
             }
         }
-        
-        cst_set_travel_time[i] = cst_vector(env, d.ns + 2);
-        
-        for(auto s = 1; s < d.ns + 1; s++) {
-            name.str(""); name << "cst_set_travel_time_" << i << "_" << s;
-            cst_set_travel_time[i][s] = IloRange(env, 0, 0, name.str().c_str());
-            
-            cst_set_travel_time[i][s].setLinearCoef(var_travel_time[i][s], 1);
-            
-            for(auto t = d.min_time_to_arrive_at[i][s]; t <= d.max_time_to_leave_from[i][s]; t++) {
-                for(auto ss : d.bar_tnetwork[i][s]) {
-                    if(d.adj[i][s][t][ss]) {
-                        cst_set_travel_time[i][s].setLinearCoef(var_x[i][s][t][ss], -t);
-                    }
-                }
-                for(auto ss : d.bar_inverse_tnetwork[i][s]) {
-                    if(d.adj[i][ss][t-1][s]) {
-                        cst_set_travel_time[i][s].setLinearCoef(var_x[i][ss][t-1][s], t + d.min_travel_time[i][s] - 1);
-                    }
-                }
-            }
-        }
-        
-        model.add(cst_set_travel_time[i]);
     }
     
     for(auto s = 1; s < d.ns + 1; s++) {
@@ -485,12 +455,7 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
     for(auto i = 0; i < d.nt; i++) {
         obj.setLinearCoef(var_d[i], d.wt_price);
         cst_positive_obj.setLinearCoef(var_d[i], d.wt_price);
-        
-        for(auto s = 1; s < d.ns + 1; s++) {
-            obj.setLinearCoef(var_travel_time[i][s], d.delay_price[d.tr_class[i]]);
-            cst_positive_obj.setLinearCoef(var_travel_time[i][s], d.delay_price[d.tr_class[i]]);
-        }
-        
+                
         if(d.tr_sa[i]) {
             for(auto s : d.sa_seg[i]) {
                 obj.setLinearCoef(var_e[i][s], d.sa_price);
@@ -498,12 +463,12 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
             }
         }
         
-        for(auto s : d.unpreferred_segments[i]) {
-            for(auto t = d.min_time_to_arrive_at[i][s]; t <= d.max_time_to_leave_from[i][s]; t++) {
-                for(auto ss : d.inverse_tnetwork[i][s]) {
-                    if(d.adj[i][ss][t-1][s]) {
-                        obj.setLinearCoef(var_x[i][ss][t-1][s], d.unpreferred_price);
-                        cst_positive_obj.setLinearCoef(var_x[i][ss][t-1][s], d.unpreferred_price);
+        for(auto s1 = 0; s1 < d.ns + 1; s1++) {
+            for(auto t = d.min_time_to_arrive_at[i][s1]; t <= d.max_time_to_leave_from[i][s1]; t++) {
+                for(auto s2 : d.tnetwork[i][s1]) {
+                    if(d.adj[i][s1][t][s2]) {
+                        obj.setLinearCoef(var_x[i][s1][t][s2], d.arc_cost[i][s1][t][s2]);
+                        cst_positive_obj.setLinearCoef(var_x[i][s1][t][s2], d.arc_cost[i][s1][t][s2]);
                     }
                 }
             }
@@ -551,14 +516,7 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
             }
         }
         
-        for(auto s = 1; s < d.ns + 1; s++) {
-            auto ttv = cplex.getValue(var_travel_time[i][s]);
-            if(ttv > eps) {
-                std::cout << "\tRan on segment " << s << " for " << ttv << " time units more than the minimum travel time" << std::endl;
-            } else {
-                std::cout << "\tRan on segment " << s << " in the minimum possible time, or didn't run there at all" << std::endl;
-            }
-            
+        for(auto s = 1; s < d.ns + 1; s++) {            
             for(auto t = 1; t < d.ni + 2; t++) {
                 for(auto ss = 0; ss < d.ns + 2; ss++) {
                     if(d.adj[i][ss][t-1][s]) {

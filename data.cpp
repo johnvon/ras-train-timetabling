@@ -283,10 +283,11 @@ auto data::calculate_network() {
 
 auto data::calculate_auxiliary_data() {
     tr_max_speed = bv<double>(nt, 0);
-    min_time_to_arrive_at = int_matrix(nt, ivec(ns + 2, -1));
-    max_time_to_leave_from = int_matrix(nt, ivec(ns + 2, -1));
+    min_time_to_arrive_at = int_matrix(nt, ivec(ns + 2, 0));
+    max_time_to_leave_from = int_matrix(nt, ivec(ns + 2, ni));
     min_travel_time = int_matrix(nt, ivec(ns + 2, -1));
     max_travel_time = int_matrix(nt, ivec(ns + 2, -1));
+    unpreferred = indicator_matrix(nt, bvec(ns + 2, false));
     unpreferred_segments = int_matrix(nt);
         
     for(auto i = 0; i < nt; i++) {
@@ -301,6 +302,7 @@ auto data::calculate_auxiliary_data() {
             
             if((tr_westbound[i] && !seg_westbound[s]) || (tr_eastbound[i] && !seg_eastbound[s])) {
                 unpreferred_segments[i].push_back(s);
+                unpreferred[i][s] = true;
             }
             
             auto speed = 0.0;
@@ -615,6 +617,30 @@ auto data::print_adjacency() const {
     }
 }
 
+auto data::calculate_costs() {
+    arc_cost = double_matrix_4d(nt, double_matrix_3d(ns + 2, double_matrix(ni + 2, dvec(ns + 2, 0.0))));
+    
+    for(auto i = 0; i < nt; i++) {
+        for(auto s1 = 0; s1 < ns + 1; s1++) {
+            for(auto t = min_time_to_arrive_at[i][s1]; t <= max_time_to_leave_from[i][s1]; t++) {
+                for(auto s2 = 1; s2 < ns + 1; s2++) {
+                    if(adj[i][s1][t][s2]) {
+                        if(s1 != s2) {
+                            arc_cost[i][s1][t][s2] -= delay_price[tr_class[i]] * min_travel_time[i][s2];
+                        }
+                        if(unpreferred[i][s2]) {
+                            arc_cost[i][s1][t][s2] += unpreferred_price;
+                        }
+                    }
+                }
+                if(adj[i][s1][t][ns + 1]) {
+                    arc_cost[i][s1][t][ns + 1] += delay_price[tr_class[i]] * t;
+                }
+            }
+        }
+    }
+}
+
 data::data(const std::string& file_name) : file_name{file_name} {
     using namespace std::chrono;
     high_resolution_clock::time_point t_start, t_end;
@@ -657,6 +683,8 @@ data::data(const std::string& file_name) : file_name{file_name} {
     calculate_adjacency();
     std::cout << "\t\tCalculating unaccessible segments..." << std::endl;
     calculate_accessible();
+    std::cout << "\t\tCalculating arc costs..." << std::endl;
+    calculate_costs();
     
     t_end = high_resolution_clock::now();
     time_span = duration_cast<duration<double>>(t_end - t_start);
