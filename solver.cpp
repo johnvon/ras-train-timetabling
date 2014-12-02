@@ -4,7 +4,7 @@
 #include <chrono>
 #include <sstream>
 
-void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const {
+void solver::solve() const {
     using namespace std::chrono;
     high_resolution_clock::time_point t_start, t_end;
     duration<double> time_span;
@@ -114,7 +114,7 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
         
         cst_flow[i] = cst_matrix_2d(env, d.ns + 2);
         
-        if(use_alt_min_travel_time) {
+        if(p.model.alternative_min_travel_time_cst) {
             cst_alt_min_travel_time[i] = cst_vector(env, d.ns + 2);
         } else {
             cst_min_travel_time[i] = cst_matrix_2d(env, d.ns + 2);
@@ -123,7 +123,7 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
         for(auto s = 1; s < d.ns + 1; s++) {
             cst_flow[i][s] = cst_vector(env, d.ni + 2);
             
-            if(use_alt_min_travel_time) {
+            if(p.model.alternative_min_travel_time_cst) {
                 name.str(""); name << "cst_alt_min_travel_time_" << i << "_" << s;
                 cst_alt_min_travel_time[i][s] = IloRange(env, -IloInfinity, 0, name.str().c_str());
             } else {
@@ -149,7 +149,7 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                 }
             }
             
-            if(use_alt_min_travel_time) {
+            if(p.model.alternative_min_travel_time_cst) {
                 for(auto t = d.min_time_to_arrive_at[i][s]; t <= d.max_time_to_leave_from[i][s] - 1; t++) {
                     if(d.adj[i][s][t][s]) {
                         cst_alt_min_travel_time[i][s].setLinearCoef(var_x[i][s][t][s], -1);
@@ -163,6 +163,8 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                         }
                     }
                 }
+                
+                model.add(cst_alt_min_travel_time[i]);
             } else {
                 for(auto t = d.min_time_to_arrive_at[i][s]; t <= d.max_time_to_leave_from[i][s] - d.min_travel_time[i][s]; t++) {
                     if(d.v[i][s][t]) {
@@ -183,7 +185,7 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                             }
                         }
                         
-                        if(use_max_travel_time) {
+                        if(p.model.max_travel_time_cst) {
                             for(auto tt = t + d.max_travel_time[i][s] + 1; tt <= d.max_time_to_leave_from[i][s]; tt++) {
                                 for(auto ss : d.bar_tnetwork[i][s]) {
                                     if(d.adj[i][s][tt][ss]) {
@@ -196,10 +198,6 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
                 }
                 
                 model.add(cst_min_travel_time[i][s]);
-            }
-            
-            if(use_alt_min_travel_time) {
-                model.add(cst_alt_min_travel_time[i]);
             }
             
             model.add(cst_flow[i][s]);
@@ -486,24 +484,26 @@ void solver::solve(bool use_max_travel_time, bool use_alt_min_travel_time) const
         obj.setLinearCoef(var_d[i], d.wt_price);
         cst_positive_obj.setLinearCoef(var_d[i], d.wt_price);
         
-        for(auto s = 1; s < d.ns + 1; s++) {
-            obj.setLinearCoef(var_travel_time[i][s], d.delay_price[d.tr_class[i]]);
-            cst_positive_obj.setLinearCoef(var_travel_time[i][s], d.delay_price[d.tr_class[i]]);
-        }
-        
-        if(d.tr_sa[i]) {
-            for(auto s : d.sa_seg[i]) {
-                obj.setLinearCoef(var_e[i][s], d.sa_price);
-                cst_positive_obj.setLinearCoef(var_e[i][s], d.sa_price);
+        if(!p.heuristics.simplified_objective_function) {
+            for(auto s = 1; s < d.ns + 1; s++) {
+                obj.setLinearCoef(var_travel_time[i][s], d.delay_price[d.tr_class[i]]);
+                cst_positive_obj.setLinearCoef(var_travel_time[i][s], d.delay_price[d.tr_class[i]]);
             }
-        }
         
-        for(auto s : d.unpreferred_segments[i]) {
-            for(auto t = d.min_time_to_arrive_at[i][s]; t <= d.max_time_to_leave_from[i][s]; t++) {
-                for(auto ss : d.inverse_tnetwork[i][s]) {
-                    if(d.adj[i][ss][t-1][s]) {
-                        obj.setLinearCoef(var_x[i][ss][t-1][s], d.unpreferred_price);
-                        cst_positive_obj.setLinearCoef(var_x[i][ss][t-1][s], d.unpreferred_price);
+            if(d.tr_sa[i]) {
+                for(auto s : d.sa_seg[i]) {
+                    obj.setLinearCoef(var_e[i][s], d.sa_price);
+                    cst_positive_obj.setLinearCoef(var_e[i][s], d.sa_price);
+                }
+            }
+        
+            for(auto s : d.unpreferred_segments[i]) {
+                for(auto t = d.min_time_to_arrive_at[i][s]; t <= d.max_time_to_leave_from[i][s]; t++) {
+                    for(auto ss : d.inverse_tnetwork[i][s]) {
+                        if(d.adj[i][ss][t-1][s]) {
+                            obj.setLinearCoef(var_x[i][ss][t-1][s], d.unpreferred_price);
+                            cst_positive_obj.setLinearCoef(var_x[i][ss][t-1][s], d.unpreferred_price);
+                        }
                     }
                 }
             }

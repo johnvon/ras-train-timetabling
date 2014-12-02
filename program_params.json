@@ -1,0 +1,9 @@
+{
+    "model": {
+        "alternative_min_travel_time_cst":          true,
+        "max_travel_time_cst":                      false
+    },
+    "heuristics": {
+        "simplified_objective_function":            true
+    }
+}

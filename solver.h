@@ -6,6 +6,7 @@
 #include <ilcplex/ilocplex.h>
 
 #include <data.h>
+#include <params.h>
 
 using var_vector = IloNumVarArray;
 using var_matrix_2d = IloArray<var_vector>;
@@ -18,11 +19,12 @@ using cst_matrix_3d = IloArray<cst_matrix_2d>;
 
 class solver {
     data& d;
+    params& p;
 
 public:
-    solver(data& d) : d{d} {};
+    solver(data& d, params& p) : d{d}, p{p} {};
     
-    void solve(bool use_max_travel_time, bool use_alt_min_travel_time) const;
+    void solve() const;
 };
 
 #endif
