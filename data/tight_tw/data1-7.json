@@ -86,21 +86,21 @@
     "trains_number":    1,
     "trains": [
         {
-            "class": "A",
+            "class": "B",
             "schedule_adherence": true,
-            "entry_time": 1,
+            "entry_time": 600,
             "origin_node": 0,
             "destination_node": 39,
             "eastbound": true,
             "westbound": false,
-            "speed_multi": 1,
+            "speed_multi": 0.88,
             "length": 1,
             "tob": 75,
-            "hazmat": false,
-            "terminal_wt": 90,
+            "hazmat": true,
+            "terminal_wt": 700,
             "schedule": [
-                {"node": 37, "time": 60},
-                {"node": 39, "time": 130}
+                {"node": 37, "time": 650},
+                {"node": 39, "time": 750}
             ]
         }
     ],

@@ -8,9 +8,9 @@
     "speed_xover":      0.25,
     
     "time_intervals":       720,
-    "want_time_tw_start":   60,
-    "want_time_tw_end":     180,
-    "schedule_tw_end":      120,
+    "want_time_tw_start":   0,
+    "want_time_tw_end":     0,
+    "schedule_tw_end":      0,
     "headway":              5,
     
     "general_delay_price": {
@@ -83,9 +83,26 @@
         {"extreme_1": 49, "extreme_2": 55, "type": "S", "length": 2.6, "siding_length": 2.0, "eastbound": false, "westbound": true, "min_distance_from_w": 62.9, "min_distance_from_e": 43.1}
     ],
     
-    "trains_number":    0,
+    "trains_number":    1,
     "trains": [
-
+        {
+            "class": "B",
+            "schedule_adherence": true,
+            "entry_time": 120,
+            "origin_node": 30,
+            "destination_node": 0,
+            "eastbound": false,
+            "westbound": true,
+            "speed_multi": 0.88,
+            "length": 1,
+            "tob": 75,
+            "hazmat": false,
+            "terminal_wt": 230,
+            "schedule": [
+                {"node": 37, "time": 210},
+                {"node": 0, "time": 290}
+            ]
+        }
     ],
     
     "mow": [
