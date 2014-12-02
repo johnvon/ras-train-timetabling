@@ -3,12 +3,10 @@
 
 int main(int argc, char* argv[]) {
     data        d(argv[1]);
-    solver      s(d);
+    params      p(argv[2]);
+    solver      s(d, p);
     
-    auto use_max_travel_time = (strcmp(argv[2], "max_travel_time=true") == 0);
-    auto use_alt_min_travel_time = (strcmp(argv[3], "alt_min_travel_time=true") == 0);
-    
-    s.solve(use_max_travel_time, use_alt_min_travel_time);
+    s.solve();
     
     return 0;
 }

@@ -7,6 +7,8 @@
 #include <boost/container/vector.hpp>
 #include <boost/property_tree/ptree.hpp>
 
+#include <params.h>
+
 template<typename T>
 using bv = boost::container::vector<T>;
 
