@@ -108,12 +108,12 @@ auto data::read_trains(const ptree& pt) {
         tr_wt.push_back(train_child.second.get<int>("terminal_wt"));
         
         sa_ext.push_back(ivec());
-        sa_ext_times.push_back(ivec());
+        sa_times.push_back(ivec());
         BOOST_FOREACH(const ptree::value_type& schedule_child, train_child.second.get_child("schedule")) {
             auto extreme = schedule_child.second.get<int>("node");
             auto ti = schedule_child.second.get<int>("time");
             sa_ext.back().push_back(extreme);
-            sa_ext_times.back().push_back(ti);
+            sa_times.back().push_back(ti);
         }
     }
     
@@ -130,7 +130,7 @@ auto data::read_trains(const ptree& pt) {
     assert((int)tr_hazmat.size() == nt);
     assert((int)tr_wt.size() == nt);
     assert((int)sa_ext.size() == nt);
-    assert((int)sa_ext_times.size() == nt);
+    assert((int)sa_times.size() == nt);
 }
 
 auto data::read_mows(const ptree& pt) {
@@ -187,30 +187,29 @@ auto data::calculate_mows() {
 
 auto data::calculate_schedules() {
     assert((int)sa_ext.size() == nt);
-    assert((int)sa_ext_times.size() == nt);
+    assert((int)sa_times.size() == nt);
     
-    sa = indicator_matrix(nt, bvec(ns + 2, false));
-    sa_seg = int_matrix(nt);
-    sa_times = int_matrix(nt, ivec(ns + 2, -1));
+    sa_num = ivec(nt, 0);
+    segments_for_sa = int_matrix_3d(nt);
     
     for(auto i = 0; i < nt; i++) {
         if(!tr_sa[i]) {
             assert(sa_ext[i].size() == 0);
-            assert(sa_ext_times[i].size() == 0);
+            assert(sa_times[i].size() == 0);
         } else {
-            assert(sa_ext[i].size() == sa_ext_times[i].size());
-            for(auto m = 0u; m < sa_ext[i].size(); m++) {
+            assert(sa_ext[i].size() == sa_times[i].size());
+            sa_num[i] = sa_ext[i].size();
+            segments_for_sa[i] = int_matrix(sa_ext[i].size());
+            
+            for(auto n = 0u; n < sa_ext[i].size(); n++) {
                 for(auto s = 0; s < ns + 2; s++) {
-                    if( (tr_westbound[i] && seg_w_ext[s] == sa_ext[i][m]) ||
-                        (tr_eastbound[i] && seg_e_ext[s] == sa_ext[i][m])
+                    if( (tr_westbound[i] && seg_w_ext[s] == sa_ext[i][n]) ||
+                        (tr_eastbound[i] && seg_e_ext[s] == sa_ext[i][n])
                     ) {
-                        sa[i][s] = true;
-                        sa_seg[i].push_back(s);
-                        sa_times[i][s] = sa_ext_times[i][m];
+                        segments_for_sa[i][n].push_back(s);
                     }
                 }
             }
-            assert(boost::count(sa[i], true) == (int)sa_ext[i].size());
         }
     }
 }
@@ -333,18 +332,15 @@ auto data::calculate_auxiliary_data() {
         }
     }
     
-    is_main = indicator_matrix(ns + 2, bvec(ns + 2, false));
     main_tracks = int_matrix(ns + 2);
-        
     for(auto s = 1; s < ns + 1; s++) {
         for(auto m = 1; m < ns + 1; m++) {
-            auto _is_main = (
+            auto is_main = (
                 seg_type[s] == 'S' &&
                 (seg_type[m] == '0' || seg_type[m] == '1' || seg_type[m] == '2') &&
                 (seg_e_ext[s] == seg_e_ext[m] || seg_w_ext[s] == seg_w_ext[m])
             );
-            is_main[s][m] = _is_main;
-            if(_is_main) {
+            if(is_main) {
                 main_tracks[s].push_back(m);
             }
         }
@@ -395,22 +391,6 @@ auto data::calculate_vertices() {
         for(auto t = first_time_we_need_tau[i]; t <= ni + 1; t++) {
             v[i][ns + 1][t] = true;
             trains_for[ns + 1][t].push_back(i);
-        }
-    }
-}
-
-auto data::calculate_accessible() {
-    accessible = indicator_matrix(nt, bvec(ns + 2, false));
-    accessible_by_someone = bvec(ns + 2, false);
-    
-    for(auto i = 0; i < nt; i++) {
-        accessible[i][0] = true;
-        accessible[i][ns + 1] = true;
-        for(auto s = 1; s < ns + 1; s++) {
-            if(boost::count(v[i][s], true) > 0) {
-                accessible[i][s] = true;
-                accessible_by_someone[s] = true;
-            }
         }
     }
 }
@@ -469,9 +449,21 @@ auto data::generate_s_tau_arcs() {
 auto data::generate_stop_arcs() {
     for(auto i = 0; i < nt; i++) {
         for(auto s = 1; s < ns + 1; s++) {
+            auto is_sa = false;
+            auto sa_number = -1;
+            
+            if(tr_sa[i]) {
+                for(auto n = 0; n < sa_num[i]; n++) {
+                    if(std::find(segments_for_sa[i][n].begin(), segments_for_sa[i][n].end(), s) != segments_for_sa[i][n].end()) {
+                        is_sa = true;
+                        sa_number = n;
+                    }
+                }
+            }
+            
             for(auto t = min_time_to_arrive_at[i][s]; t <= max_time_to_leave_from[i][s] - 1; t++) {
                 if(t + 1 <= ni && v[i][s][t] && v[i][s][t + 1]) {
-                    if(tr_sa[i] && sa[i][s] && t+1 > sa_times[i][s] + sa_tw_right && sa_price * (t+1 - (sa_times[i][s] + sa_tw_right)) > total_cost_ub) {
+                    if(is_sa && t+1 > sa_times[i][sa_number] + sa_tw_right && sa_price * (t+1 - (sa_times[i][sa_number] + sa_tw_right)) > total_cost_ub) {
                         continue;
                     }
                     
@@ -496,13 +488,37 @@ auto data::generate_stop_arcs() {
 auto data::generate_movement_arcs() {
     for(auto i = 0; i < nt; i++) {
         for(auto s1 = 1; s1 < ns + 1; s1++) {
+            auto is_sa_1 = false;
+            auto sa_number_1 = -1;
+            
+            if(tr_sa[i]) {
+                for(auto n = 0; n < sa_num[i]; n++) {
+                    if(std::find(segments_for_sa[i][n].begin(), segments_for_sa[i][n].end(), s1) != segments_for_sa[i][n].end()) {
+                        is_sa_1 = true;
+                        sa_number_1 = n;
+                    }
+                }
+            }
+            
             for(auto s2 = 1; s2 < ns + 1; s2++) {
                 if(network[s1][s2] && (
                     (tr_eastbound[i] && seg_e_ext[s1] == seg_w_ext[s2]) ||
                     (tr_westbound[i] && seg_w_ext[s1] == seg_e_ext[s2])
                 )) {
+                    auto is_sa_2 = false;
+                    auto sa_number_2 = -1;
+            
+                    if(tr_sa[i]) {
+                        for(auto n = 0; n < sa_num[i]; n++) {
+                            if(std::find(segments_for_sa[i][n].begin(), segments_for_sa[i][n].end(), s2) != segments_for_sa[i][n].end()) {
+                                is_sa_2 = true;
+                                sa_number_2 = n;
+                            }
+                        }
+                    }
+                    
                     for(auto t = min_time_to_arrive_at[i][s1] + min_travel_time[i][s1] - 1; t <= max_time_to_leave_from[i][s2] - min_travel_time[i][s2]; t++) {
-                        if(tr_sa[i] && sa[i][s1] && t > sa_times[i][s1] + sa_tw_right && sa_price * (t - (sa_times[i][s1] + sa_tw_right)) > total_cost_ub) {
+                        if(is_sa_1 && t > sa_times[i][sa_number_1] + sa_tw_right && sa_price * (t - (sa_times[i][sa_number_1] + sa_tw_right)) > total_cost_ub) {
                             continue;
                         }
                         
@@ -520,7 +536,7 @@ auto data::generate_movement_arcs() {
                             continue;
                         }
 
-                        if(tr_sa[i] && sa[i][s2] && t+1 > sa_times[i][s2] + sa_tw_right && sa_price * (t+1 - (sa_times[i][s2] + sa_tw_right)) > total_cost_ub) {
+                        if(is_sa_2 && t+1 > sa_times[i][sa_number_2] + sa_tw_right && sa_price * (t+1 - (sa_times[i][sa_number_2] + sa_tw_right)) > total_cost_ub) {
                             continue;
                         }
                         
@@ -542,6 +558,7 @@ auto data::cleanup_adjacency() {
             
         while(!clean) {
             clean = true;
+            
             for(auto s1 = 0; s1 < ns + 2; s1++) {
                 for(auto t1 = 0; t1 < ni + 2; t1++) {
                     auto _in = n_in[i][s1][t1];
@@ -553,7 +570,7 @@ auto data::cleanup_adjacency() {
                     } else {
                         if( (s1 != 0 && s1 != ns + 1 && (_in == 0 || _out == 0 || _in + _out <= 1)) ||
                             ((s1 == 0 || s1 == ns + 1) && (_in + _out == 0))
-                        ) {                            
+                        ) {
                             for(auto s2 = 0; s2 < ns + 2; s2++) {
                                 if(t1 < ni + 1 && adj[i][s1][t1][s2]) {
                                     adj[i][s1][t1][s2] = false;
@@ -564,9 +581,11 @@ auto data::cleanup_adjacency() {
                                     n_out[i][s2][t1-1]--;
                                 }
                             }
+                            
                             n_in[i][s1][t1] = 0;
                             n_out[i][s1][t1] = 0;
                             v[i][s1][t1] = false;
+                            
                             auto still_valid_vertex = false;
                             for(auto i = 0; i < nt; i++) {
                                 if(v[i][s1][t1]) {
@@ -617,30 +636,6 @@ auto data::print_adjacency() const {
     }
 }
 
-auto data::calculate_costs() {
-    arc_cost = double_matrix_4d(nt, double_matrix_3d(ns + 2, double_matrix(ni + 2, dvec(ns + 2, 0.0))));
-    
-    for(auto i = 0; i < nt; i++) {
-        for(auto s1 = 0; s1 < ns + 1; s1++) {
-            for(auto t = min_time_to_arrive_at[i][s1]; t <= max_time_to_leave_from[i][s1]; t++) {
-                for(auto s2 = 1; s2 < ns + 1; s2++) {
-                    if(adj[i][s1][t][s2]) {
-                        if(s1 != s2) {
-                            arc_cost[i][s1][t][s2] -= delay_price[tr_class[i]] * min_travel_time[i][s2];
-                        }
-                        if(unpreferred[i][s2]) {
-                            arc_cost[i][s1][t][s2] += unpreferred_price;
-                        }
-                    }
-                }
-                if(adj[i][s1][t][ns + 1]) {
-                    arc_cost[i][s1][t][ns + 1] += delay_price[tr_class[i]] * t;
-                }
-            }
-        }
-    }
-}
-
 data::data(const std::string& file_name) : file_name{file_name} {
     using namespace std::chrono;
     high_resolution_clock::time_point t_start, t_end;
@@ -681,10 +676,6 @@ data::data(const std::string& file_name) : file_name{file_name} {
     calculate_vertices();
     std::cout << "\t\tCalculating adjacency matrix..." << std::endl;
     calculate_adjacency();
-    std::cout << "\t\tCalculating unaccessible segments..." << std::endl;
-    calculate_accessible();
-    std::cout << "\t\tCalculating arc costs..." << std::endl;
-    calculate_costs();
     
     t_end = high_resolution_clock::now();
     time_span = duration_cast<duration<double>>(t_end - t_start);

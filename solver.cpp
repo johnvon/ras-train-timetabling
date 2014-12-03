@@ -32,20 +32,23 @@ void solver::solve() const {
         name.str(""); name << "var_d_" << i; auto ub_d = std::max(d.tr_wt[i], d.ni - d.tr_wt[i]);
         var_d[i] = IloNumVar(env, 0.0, ub_d, IloNumVar::Int, name.str().c_str());
         
-        var_e[i] = IloNumVarArray(env, d.ns + 2);
         var_travel_time[i] = IloNumVarArray(env, d.ns + 2);
+        
+        if(d.tr_sa[i]) {
+            var_e[i] = IloNumVarArray(env, d.ns + 2);
+            
+            for(auto n = 0; n < d.sa_num[i]; n++) {
+                name.str(""); name << "var_e_" << i << "_" << n;
+                auto ub_e = std::max(d.sa_times[i][n], d.ni - d.sa_times[i][n]);
+                var_e[i][n] = IloNumVar(env, 0.0, ub_e, IloNumVar::Int, name.str().c_str());
+            }
+        }
         
         for(auto s1 = 0; s1 < d.ns + 2; s1++) {
             var_x[i][s1] = var_matrix_2d(env, d.ni + 2);
             
             name.str(""); name << "var_travel_time_" << i << "_" << s1;
             var_travel_time[i][s1] = IloNumVar(env, 0, d.max_travel_time[i][s1], IloNumVar::Int, name.str().c_str());
-            
-            if(d.sa[i][s1]) {
-                name.str(""); name << "var_e_" << i << "_" << s1;
-                auto ub_e = std::max(d.sa_times[i][s1], d.ni - d.sa_times[i][s1]);
-                var_e[i][s1] = IloNumVar(env, 0.0, ub_e, IloNumVar::Int, name.str().c_str());
-            }
             
             for(auto t = 0; t < d.ni + 1; t++) {
                 var_x[i][s1][t] = IloNumVarArray(env, d.ns + 2);
@@ -224,24 +227,26 @@ void solver::solve() const {
         }
         
         if(d.tr_sa[i]) {
-            cst_visit_sa[i] = cst_vector(env, d.ns + 2);
-            cst_sa_delay[i] = cst_vector(env, d.ns + 2);
+            cst_visit_sa[i] = cst_vector(env, d.sa_num[i]);
+            cst_sa_delay[i] = cst_vector(env, d.sa_num[i]);
             
-            for(auto s : d.sa_seg[i]) {
-                name.str(""); name << "cst_visit_sa_" << i << "_" << s;
-                cst_visit_sa[i][s] = IloRange(env, 1, IloInfinity, name.str().c_str());
+            for(auto n = 0; n < d.sa_num[i]; n++) {
+                name.str(""); name << "cst_visit_sa_" << i << "_" << n;
+                cst_visit_sa[i][n] = IloRange(env, 1, IloInfinity, name.str().c_str());
                 
-                name.str(""); name << "cst_sa_delay_" << i << "_" << s;
-                auto ais = d.sa_times[i][s] + d.sa_tw_right - 1;
-                cst_sa_delay[i][s] = IloRange(env, -IloInfinity, ais, name.str().c_str());
+                name.str(""); name << "cst_sa_delay_" << i << "_" << n;
+                auto ais = d.sa_times[i][n] + d.sa_tw_right - 1;
+                cst_sa_delay[i][n] = IloRange(env, -IloInfinity, ais, name.str().c_str());
                 
-                cst_sa_delay[i][s].setLinearCoef(var_e[i][s], -1.0);
-                
-                for(auto ss : d.bar_inverse_tnetwork[i][s]) {
-                    for(auto t = d.min_time_to_arrive_at[i][s]; t <= d.max_time_to_leave_from[i][s]; t++) {
-                        if(d.adj[i][ss][t-1][s]) {
-                            cst_visit_sa[i][s].setLinearCoef(var_x[i][ss][t-1][s], 1);
-                            cst_sa_delay[i][s].setLinearCoef(var_x[i][ss][t-1][s], t);
+                cst_sa_delay[i][n].setLinearCoef(var_e[i][n], -1.0);
+                                
+                for(auto s : d.segments_for_sa[i][n]) {
+                    for(auto ss : d.bar_tnetwork[i][s]) {
+                        for(auto t = d.min_time_to_arrive_at[i][s]; t <= d.max_time_to_leave_from[i][s]; t++) {
+                            if(d.adj[i][s][t][ss]) {
+                                cst_visit_sa[i][n].setLinearCoef(var_x[i][s][t][ss], 1);
+                                cst_sa_delay[i][n].setLinearCoef(var_x[i][s][t][ss], t);
+                            }
                         }
                     }
                 }
@@ -491,9 +496,9 @@ void solver::solve() const {
             }
         
             if(d.tr_sa[i]) {
-                for(auto s : d.sa_seg[i]) {
-                    obj.setLinearCoef(var_e[i][s], d.sa_price);
-                    cst_positive_obj.setLinearCoef(var_e[i][s], d.sa_price);
+                for(auto n = 0; n < d.sa_num[i]; n++) {
+                    obj.setLinearCoef(var_e[i][n], d.sa_price);
+                    cst_positive_obj.setLinearCoef(var_e[i][n], d.sa_price);
                 }
             }
         
@@ -539,14 +544,14 @@ void solver::solve() const {
         } else {
             std::cout << "\tArrived at its terminal within the time window" << std::endl;
         }
-        
-        for(auto s = 0; s < d.ns + 2; s++) {
-            if(d.sa[i][s]) {
-                auto ev = cplex.getValue(var_e[i][s]);
+
+        if(d.tr_sa[i]) {
+            for(auto n = 0; n < d.sa_num[i]; n++) {
+                auto ev = cplex.getValue(var_e[i][n]);
                 if(ev > eps) {
-                    std::cout << "\tArrived at its SA segment " << s << ", " << ev << " time units after its time window" << std::endl;
+                    std::cout << "\tArrived at its SA point " << n << ", " << ev << " time units after its time window" << std::endl;
                 } else {
-                    std::cout << "\tArrived at its SA segment " << s << " within its time window" << std::endl;
+                    std::cout << "\tArrived at its SA point " << n << " within its time window" << std::endl;
                 }
             }
         }

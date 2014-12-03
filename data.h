@@ -47,6 +47,56 @@ using delay_price_map = std::unordered_map<char, double>;
 */
 
 struct data {
+    int                 nt, // Number of trains
+                        ns, // Number of segments
+                        ni, // Number of time intervals
+                        headway, // Time intervals between two consecutive trains
+                        wt_tw_left, // Penalised if arriving at terminal with more than this advance
+                        wt_tw_right, // Penalised if arriving at terminal with more than this delay
+                        sa_tw_right; // Penalised if arriving at SA point with more than this delay
+
+    double              wt_price, // Unit price for advance/delay at terminal
+                        sa_price, // Unit price for delay at SA point
+                        unpreferred_price; // Unit price for use of unpreferred track
+
+    ivec                tr_wt, // Train's want time
+                        sidings, // List of sidings
+                        xovers, // List of cross-overs
+                        sa_num; // (train => number of SA points)
+
+    bv<char>            tr_class; // Train class ('A', 'B', 'C', 'D', 'E', 'F')
+
+    bvec                tr_sa, // Is it a SA train?
+                        tr_heavy; // Is the train heavy?
+                        
+    delay_price_map     delay_price; // Map (train type => unit price) of the penality to pay when not running at max speed
+
+    indicator_matrix    v_for_someone; // ((segment, time) => bool) is true if there is at least one train s.t. v(train, segment, time) == true
+    
+    int_matrix          tr_orig_seg, // Train's origin segment(s) (train => segment1, ...)
+                        tr_dest_seg, // Train's destination segment(s) (train => segment1, ...)
+                        min_time_to_arrive_at, // ((train, segment) => time) minimum time for <train> to reach <segment> from the origin terminal
+                        max_time_to_leave_from, // ((train, segment) => time) maximum time for <train> to leave <segment> to the destination terminal
+                        min_travel_time, // ((train, segment) => time) minimum travel time on <segment> for <train>
+                        max_travel_time, // ((train, segment) => time) maximum travel time on <segment> for <train> in order for the penalty to be < UB
+                        main_tracks, // (segment => segment1, ...) list of mains if <segment> is a siding, or an empty list
+                        unpreferred_segments, // (train => segment1, ...) list of unpreferred segments for <train>
+                        sa_times; // ((train, sa#) => time) time at which <train> should be at the <sa#>-th SA point
+
+    int_matrix_3d       tnetwork, // ((train, segment) => segment1, ...) list of segments connected to <segment> in <train>'s direction [includes itself]
+                        inverse_tnetwork, // ((train, segment) => segment1, ...) list of segments s.c. <segment> is connected to them in <train>'s direction [include itself]
+                        bar_tnetwork, // ((train, segment) => segment1, ...) list of segments connected to <segment> in <train>'s direction
+                        bar_inverse_tnetwork, // ((train, segment) => segment1, ...) list of segments s.c. <segment> is connected to them in <train>'s direction
+                        trains_for, // ((segment, time) => train1, ...) list of trains for which v(train, segment, time) == true
+                        segments_for_sa; // ((train, sa#) => segment1, ...) segments for <train>'s <sa#>-th SA point
+    
+    vertices_map        v; // ((train, segment, time) => bool) is true if vertex (<train>, <segment>) is in <train>'s graph
+
+    graph_adjacency_map adj; // ((train, segment1, time, segment2, [time + 1]) => bool) is the adjacency matrix of the graph of <train>
+    
+    data(const std::string& file_name);
+    
+private:
     std::string         file_name, // Data file name
                         instance_name; // Instance name
 
@@ -56,37 +106,20 @@ struct data {
                         speed_switch, // Maximum speed in switches
                         speed_xover, // Maximum speed in cross-overs
                         total_cost_ub; // Upper bound on the total cost of the solution
-
-    int                 nt, // Number of trains
-                        ns, // Number of segments
-                        ni, // Number of time intervals
-                        headway, // Time intervals between two consecutive trains
-                        wt_tw_left, // Penalised if arriving at terminal with more than this advance
-                        wt_tw_right, // Penalised if arriving at terminal with more than this delay
-                        sa_tw_right; // Penalised if arriving at SA point with more than this delay
-
-    delay_price_map     delay_price; // Map (train type => unit price) of the penality to pay when not running at max speed
-
-    double              wt_price, // Unit price for advance/delay at terminal
-                        sa_price, // Unit price for delay at SA point
-                        unpreferred_price; // Unit price for use of unpreferred track
-
+                        
     ivec                seg_e_ext, // Easternmost extreme points of segments
                         seg_w_ext, // Westernmost extreme points of segments
                         tr_entry_time, // Train's entry time
                         tr_orig_ext, // Train's origin extreme
                         tr_dest_ext, // Train's destination extreme
                         tr_tob, // Train's tons per operating brake
-                        tr_wt, // Train's want time
                         mow_ext_e, // Mow east extremes
                         mow_ext_w, // Mow west extremes
                         mow_start_times, // Mow start times
                         mow_end_times, // Mow end times
                         last_time_we_need_sigma, // Create sigma from 0 to this time
-                        first_time_we_need_tau, // Create taut from this time to ni+1
-                        sidings, // List of sidings
-                        xovers; // List of cross-overs
-
+                        first_time_we_need_tau; // Create taut from this time to ni+1
+    
     dvec                seg_e_min_dist, // Min distance from east terminal to segment
                         seg_w_min_dist, // Min distance from west terminal to segment
                         seg_length, // Length of segment
@@ -94,58 +127,24 @@ struct data {
                         tr_speed_mult, // Train's speed multiplier
                         tr_length, // Train's length
                         tr_max_speed; // Max speed of a train on the tracks
-
-    bv<char>            seg_type, // Segment type ('0', '1', '2', 'S', 'T', 'X', 'D') - 'D' used for sigma, tau
-                        tr_class; // Train class ('A', 'B', 'C', 'D', 'E', 'F')
+    
+    bv<char>            seg_type; // Segment type ('0', '1', '2', 'S', 'T', 'X', 'D') - 'D' used for sigma, tau
 
     bvec                seg_eastbound, // Is the segment's preferred direction eastbound?
                         seg_westbound, // Is the segment's preferred direction westbound?
-                        tr_sa, // Is it a SA train?
                         tr_eastbound, // Is the train eastbound?
                         tr_westbound, // Is the train westbound?
-                        tr_heavy, // Is the train heavy?
-                        tr_hazmat, // Is the train hazmat?
-                        accessible_by_someone; // Is there at least one train s.t. accessible(train, segment) == true?
+                        tr_hazmat; // Is the train hazmat?
+                        
+    int_matrix          sa_ext; // (train => extreme1, ...) is the raw list of SA points for <train>
 
-    indicator_matrix    accessible, // ((train, segment) => bool) is true if <train> can access <segment>
-                        sa, // ((train, segment) => bool) is true if <segment> is a SA point for <train>
-                        mow, // ((segment, time) => bool) is true if there is a mow at <segment> at time <time>
-                        is_main, // ((segment1, segment2) => bool) is true if <segment1> is siding and <segment2> is its main
+    indicator_matrix    mow, // ((segment, time) => bool) is true if there is a mow at <segment> at time <time>
                         network, // ((segment1, segment2) => bool) is true if <segment1> and <segment2> are connected
-                        v_for_someone, // ((segment, time) => bool) is true if there is at least one train s.t. v(train, segment, time) == true
                         unpreferred; // ((train, segment) => bool) is true if <segment> is unpreferred for <train>
 
-    int_matrix          tr_orig_seg, // Train's origin segment(s) (train => segment1, ...)
-                        tr_dest_seg, // Train's destination segment(s) (train => segment1, ...)
-                        sa_seg, // (train => segment1, ...) is the list of segments in train's SA
-                        sa_times, // ((train, segment) => int) is the time <train> is expected at <segment> or -1
-                        sa_ext, // (train => extreme1, ...) is the raw list of SA points for <train>
-                        sa_ext_times, // (train => (time1, ...)) is the raw list of times for <train>'s SA
-                        min_time_to_arrive_at, // ((train, segment) => time) minimum time for <train> to reach <segment> from the origin terminal
-                        max_time_to_leave_from, // ((train, segment) => time) maximum time for <train> to leave <segment> to the destination terminal
-                        min_travel_time, // ((train, segment) => time) minimum travel time on <segment> for <train>
-                        max_travel_time, // ((train, segment) => time) maximum travel time on <segment> for <train> in order for the penalty to be < UB
-                        main_tracks, // (segment => segment1, ...) list of mains if <segment> is a siding, or an empty list
-                        unpreferred_segments; // (train => segment1, ...) list of unpreferred segments for <train>
-    
-    int_matrix_3d       tnetwork, // ((train, segment) => segment1, ...) list of segments connected to <segment> in <train>'s direction [includes itself]
-                        inverse_tnetwork, // ((train, segment) => segment1, ...) list of segments s.c. <segment> is connected to them in <train>'s direction [include itself]
-                        bar_tnetwork, // ((train, segment) => segment1, ...) list of segments connected to <segment> in <train>'s direction
-                        bar_inverse_tnetwork, // ((train, segment) => segment1, ...) list of segments s.c. <segment> is connected to them in <train>'s direction
-                        trains_for; // ((segment, time) => train1, ...) list of trains for which v(train, segment, time) == true
-    
-    double_matrix_4d    arc_cost; // ((train, segment1, time, segment2, [time + 1]) => double) is the cost matrix of the graph of <train>
-                        
-    vertices_map        v; // ((train, segment, time) => bool) is true if vertex (<train>, <segment>) is in <train>'s graph
-    
     vertex_count_matrix n_in, // ((train, segment, time) => n) is the number of arcs going into the vertex
                         n_out; // ((train, segment, time) => n) is the number of arcs going out of the vertex
 
-    graph_adjacency_map adj; // ((train, segment1, time, segment2, [time + 1]) => bool) is the adjacency matrix of the graph of <train>
-
-    data(const std::string& file_name);
-
-private:
     auto read_speeds(const boost::property_tree::ptree& pt);
     auto read_relevant_times(const boost::property_tree::ptree& pt);
     auto read_prices(const boost::property_tree::ptree& pt);
@@ -160,7 +159,6 @@ private:
     auto calculate_auxiliary_data();
     auto calculate_vertices();
     auto calculate_adjacency();
-    auto calculate_accessible();
     auto calculate_costs();
     
     auto generate_sigma_s_arcs();
