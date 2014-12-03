@@ -89,7 +89,7 @@
             "class": "B",
             "schedule_adherence": true,
             "entry_time": 120,
-            "origin_node": 30,
+            "origin_node": 39,
             "destination_node": 0,
             "eastbound": false,
             "westbound": true,
