@@ -9,31 +9,6 @@
 
 #include <params.h>
 
-template<typename T>
-using bv = boost::container::vector<T>;
-
-using bvec = bv<bool>;
-using indicator_matrix = bv<bvec>;
-using indicator_matrix_3d = bv<indicator_matrix>;
-using indicator_matrix_4d = bv<indicator_matrix_3d>;
-using vertices_map = indicator_matrix_3d;
-using graph_adjacency_map = indicator_matrix_4d;
-
-using ivec = bv<int>;
-using int_matrix = bv<ivec>;
-using int_matrix_3d = bv<int_matrix>;
-using int_matrix_4d = bv<int_matrix_3d>;
-using int_matrix_5d = bv<int_matrix_4d>;
-using vertex_count_matrix = int_matrix_3d;
-
-using dvec = bv<double>;
-using double_matrix = bv<dvec>;
-using double_matrix_3d = bv<double_matrix>;
-using double_matrix_4d = bv<double_matrix_3d>;
-using double_matrix_5d = bv<double_matrix_4d>;
-
-using delay_price_map = std::unordered_map<char, double>;
-
 /*
     SEGMENTS:       0 = sigma
                     1 ... ns = actual segments
@@ -46,7 +21,32 @@ using delay_price_map = std::unordered_map<char, double>;
                     ni + 1 = reserved for tau
 */
 
+template<typename T>
+using bv = boost::container::vector<T>;
+
+using bvec = bv<bool>;
+using indicator_matrix = bv<bvec>;
+using indicator_matrix_3d = bv<indicator_matrix>;
+using indicator_matrix_4d = bv<indicator_matrix_3d>;
+
+using ivec = bv<int>;
+using int_matrix = bv<ivec>;
+using int_matrix_3d = bv<int_matrix>;
+using int_matrix_4d = bv<int_matrix_3d>;
+using int_matrix_5d = bv<int_matrix_4d>;
+
+using dvec = bv<double>;
+using double_matrix = bv<dvec>;
+using double_matrix_3d = bv<double_matrix>;
+using double_matrix_4d = bv<double_matrix_3d>;
+using double_matrix_5d = bv<double_matrix_4d>;
+
 struct data {
+    using vertices_map = indicator_matrix_3d;
+    using graph_adjacency_map = indicator_matrix_4d;
+    using vertex_count_matrix = int_matrix_3d;
+    using delay_price_map = std::unordered_map<char, double>;
+    
     int                 nt, // Number of trains
                         ns, // Number of segments
                         ni, // Number of time intervals
@@ -118,7 +118,7 @@ private:
                         mow_start_times, // Mow start times
                         mow_end_times, // Mow end times
                         last_time_we_need_sigma, // Create sigma from 0 to this time
-                        first_time_we_need_tau; // Create taut from this time to ni+1
+                        first_time_we_need_tau; // Create tau from this time to ni+1
     
     dvec                seg_e_min_dist, // Min distance from east terminal to segment
                         seg_w_min_dist, // Min distance from west terminal to segment
@@ -145,30 +145,33 @@ private:
     vertex_count_matrix n_in, // ((train, segment, time) => n) is the number of arcs going into the vertex
                         n_out; // ((train, segment, time) => n) is the number of arcs going out of the vertex
 
-    auto read_speeds(const boost::property_tree::ptree& pt);
-    auto read_relevant_times(const boost::property_tree::ptree& pt);
-    auto read_prices(const boost::property_tree::ptree& pt);
-    auto read_segments(const boost::property_tree::ptree& pt);
-    auto read_trains(const boost::property_tree::ptree& pt);
-    auto read_mows(const boost::property_tree::ptree& pt);
+    auto read_speeds(const boost::property_tree::ptree& pt) -> void;
+    auto read_relevant_times(const boost::property_tree::ptree& pt) -> void;
+    auto read_prices(const boost::property_tree::ptree& pt) -> void;
+    auto read_segments(const boost::property_tree::ptree& pt) -> void;
+    auto read_trains(const boost::property_tree::ptree& pt) -> void;
+    auto read_mows(const boost::property_tree::ptree& pt) -> void;
 
-    auto calculate_train_orig_dest_segments();
-    auto calculate_mows();
-    auto calculate_schedules();
-    auto calculate_network();
-    auto calculate_auxiliary_data();
-    auto calculate_vertices();
-    auto calculate_adjacency();
-    auto calculate_costs();
+    auto calculate_max_speeds() -> void;
+    auto calculate_train_orig_dest_segments() -> void;
+    auto calculate_mows() -> void;
+    auto calculate_schedules() -> void;
+    auto calculate_network() -> void;
+    auto calculate_auxiliary_data() -> void;
+    auto calculate_vertices() -> void;
+    auto calculate_adjacency() -> void;
+    auto calculate_costs() -> void;
     
-    auto generate_sigma_s_arcs();
-    auto generate_s_tau_arcs();
-    auto generate_stop_arcs();
-    auto generate_movement_arcs();
+    auto recalculate_train_wt_and_dest_segments(int i) -> void;
     
-    auto cleanup_adjacency();
+    auto generate_sigma_s_arcs() -> void;
+    auto generate_s_tau_arcs() -> void;
+    auto generate_stop_arcs() -> void;
+    auto generate_movement_arcs() -> void;
     
-    auto print_adjacency() const;
+    auto cleanup_adjacency() -> void;
+    
+    auto print_adjacency() const -> void;
 };
 
 #endif

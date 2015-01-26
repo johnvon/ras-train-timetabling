@@ -4,6 +4,8 @@
 #include <chrono>
 #include <cmath>
 #include <iostream>
+#include <set>
+#include <utility>
 
 #include <boost/foreach.hpp>
 #include <boost/property_tree/json_parser.hpp>
@@ -12,7 +14,7 @@
 using namespace boost::property_tree;
 using namespace boost;
 
-auto data::read_speeds(const ptree& pt) {
+auto data::read_speeds(const ptree& pt) -> void {
     speed_ew = pt.get<double>("speed_ew");
     speed_we = pt.get<double>("speed_we");
     speed_siding = pt.get<double>("speed_siding");
@@ -20,14 +22,14 @@ auto data::read_speeds(const ptree& pt) {
     speed_xover = pt.get<double>("speed_xover");
 }
 
-auto data::read_relevant_times(const ptree& pt) {
+auto data::read_relevant_times(const ptree& pt) -> void {
     wt_tw_left = pt.get<int>("want_time_tw_start");
     wt_tw_right = pt.get<int>("want_time_tw_end");
     sa_tw_right = pt.get<int>("schedule_tw_end");
     headway = pt.get<int>("headway");
 }
 
-auto data::read_prices(const ptree& pt) {
+auto data::read_prices(const ptree& pt) -> void {
     for(char cl = 'A'; cl <= 'F'; cl++) {
         auto price = pt.get_child("general_delay_price").get<double>(std::string(1,cl));
         delay_price.emplace(cl, price);
@@ -38,7 +40,7 @@ auto data::read_prices(const ptree& pt) {
     unpreferred_price = pt.get<double>("unpreferred_price");
 }
 
-auto data::read_segments(const ptree& pt) {
+auto data::read_segments(const ptree& pt) -> void {
     // Sigma:
     seg_w_ext.push_back(-1002);
     seg_e_ext.push_back(-1001);
@@ -91,7 +93,7 @@ auto data::read_segments(const ptree& pt) {
     assert((int)seg_westbound.size() == ns + 2);
 }
 
-auto data::read_trains(const ptree& pt) {
+auto data::read_trains(const ptree& pt) -> void {
     BOOST_FOREACH(const ptree::value_type& train_child, pt.get_child("trains")) {
         tr_class.push_back(train_child.second.get<char>("class"));
         tr_sa.push_back(train_child.second.get<bool>("schedule_adherence"));
@@ -112,8 +114,11 @@ auto data::read_trains(const ptree& pt) {
         BOOST_FOREACH(const ptree::value_type& schedule_child, train_child.second.get_child("schedule")) {
             auto extreme = schedule_child.second.get<int>("node");
             auto ti = schedule_child.second.get<int>("time");
-            sa_ext.back().push_back(extreme);
-            sa_times.back().push_back(ti);
+            
+            if(ti <= ni) {
+                sa_ext.back().push_back(extreme);
+                sa_times.back().push_back(ti);
+            }
         }
     }
     
@@ -133,7 +138,7 @@ auto data::read_trains(const ptree& pt) {
     assert((int)sa_times.size() == nt);
 }
 
-auto data::read_mows(const ptree& pt) {
+auto data::read_mows(const ptree& pt) -> void {
     BOOST_FOREACH(const ptree::value_type& mow_child, pt.get_child("mow")) {
         mow_ext_w.push_back(mow_child.second.get<int>("extreme_1"));
         mow_ext_e.push_back(mow_child.second.get<int>("extreme_2"));
@@ -142,7 +147,15 @@ auto data::read_mows(const ptree& pt) {
     }
 }
 
-auto data::calculate_train_orig_dest_segments() {
+auto data::calculate_max_speeds() -> void {
+    tr_max_speed = bv<double>(nt, 0);
+    
+    for(auto i = 0; i < nt; i++) {
+        tr_max_speed[i] = tr_speed_mult[i] * (tr_westbound[i] ? speed_ew : speed_we);
+    }
+}
+
+auto data::calculate_train_orig_dest_segments() -> void {
     tr_orig_seg = int_matrix(nt, ivec());
     tr_dest_seg = int_matrix(nt, ivec());
         
@@ -162,12 +175,153 @@ auto data::calculate_train_orig_dest_segments() {
             }
         }
         
+        if(tr_wt[i] > ni) {
+            recalculate_train_wt_and_dest_segments(i);
+        }
+        
         assert(tr_orig_seg[i].size() > 0);
         assert(tr_dest_seg[i].size() > 0);
     }
 }
 
-auto data::calculate_mows() {
+auto data::recalculate_train_wt_and_dest_segments(int i) -> void {
+    assert(tr_wt[i] > ni);
+    
+    auto excess_ti = tr_wt[i] - ni;
+    auto distance_from_terminal = tr_max_speed[i] * excess_ti;
+    auto closest_segment = -1;
+    auto closest_dist = std::numeric_limits<int>::max();
+    
+    std::cerr << "Excess time: " << excess_ti << std::endl;
+    std::cerr << "Distance from old terminal: " << distance_from_terminal << std::endl;
+    std::cerr << std::endl;
+    
+    std::cerr << "**** Segments before (" << ns << ") ****" << std::endl;
+    for(auto s = 1; s < ns + 1; s++) {
+        std::cerr << "s:" << std::setw(4) << s << " (" << seg_type[s] << "), ext:" << std::setw(4) << seg_w_ext[s] << std::setw(4) << seg_e_ext[s];
+        std::cerr << ", len:" << std::setw(6) << seg_length[s] << " (" << std::setw(6) << seg_siding_length[s] << ")";
+        std::cerr << ", min dist:" << std::setw(6) << seg_w_min_dist[s] << std::setw(6) << seg_e_min_dist[s] << std::endl;
+    }
+    
+    for(auto s = 1; s < ns + 1; s++) {
+        if((tr_eastbound[i] && seg_eastbound[s]) || (tr_westbound[i] && seg_westbound[s])) {
+            if(seg_type[s] == '0' || seg_type[s] == '1' || seg_type[s] == '2') {
+                if(
+                    (tr_eastbound[i] && seg_e_min_dist[s] > distance_from_terminal && seg_e_min_dist[s] - distance_from_terminal < closest_dist) ||
+                    (tr_westbound[i] && seg_w_min_dist[s] > distance_from_terminal && seg_w_min_dist[s] - distance_from_terminal < closest_dist)
+                ) {
+                    closest_segment = s;
+                    closest_dist = seg_e_min_dist[s] - distance_from_terminal;
+                }
+            }
+        }
+    }
+    
+    std::cerr << std::endl;
+    std::cerr << "New terminal: " << closest_segment << std::endl;
+    std::cerr << std::endl;
+    
+    assert(closest_segment != -1);
+    
+    // We save information about the new "destination terminal" that will stay the same even after we
+    // delete other segments, thereby "shifting" segments ids
+    auto dest_seg_identifier = std::make_pair(seg_e_ext[closest_segment], seg_w_ext[closest_segment]);
+    
+    // Same for the origin segment(s)
+    auto orig_seg_identifiers = std::vector<std::pair<int, int>>();
+    for(auto orig_s : tr_orig_seg[i]) {
+        orig_seg_identifiers.push_back(std::make_pair(seg_e_ext[orig_s], seg_w_ext[orig_s]));
+    }
+    
+    // New want time is the end of the time horizon
+    tr_wt[i] = ni;
+    
+    // Forget about previous destination terminals, we will put the new one in here later
+    tr_dest_seg[i].clear();
+    
+    // Same for origin terminals
+    tr_orig_seg[i].clear();
+    
+    // Update train's destination extreme
+    if(tr_eastbound[i]) {
+        tr_dest_ext[i] = seg_e_ext[closest_segment];
+    } else {
+        tr_dest_ext[i] = seg_w_ext[closest_segment];
+    }
+    
+    // Collect a list of indices of segments we need to remove
+    auto indices_to_remove = std::set<size_t>();
+    
+    for(auto s = 1; s < ns + 1; s++) {
+        // Delete all segments after closest_segment and recalculate
+        // all the seg_e_min_dist and seg_w_min_dist values for the
+        // remaining segments
+        
+        if(tr_eastbound[i]) {
+            if(seg_e_min_dist[s] < seg_e_min_dist[closest_segment]) {
+                std::cerr << "Segment " << s << " (" << seg_w_ext[s] << "," << seg_e_ext[s] << ")";
+                std::cerr << " is at " << seg_e_min_dist[s] << " units from the old terminal vs ";
+                std::cerr << seg_e_min_dist[closest_segment] << " units of the new terminal: we remove it!" << std::endl;
+                indices_to_remove.insert(s);
+            } else {
+                seg_e_min_dist[s] -= seg_e_min_dist[closest_segment];
+            }
+        }
+        
+        if(tr_westbound[i]) {
+            if(seg_w_min_dist[s] < seg_w_min_dist[closest_segment]) {
+                std::cerr << "Segment " << s << " (" << seg_w_ext[s] << "," << seg_e_ext[s] << ")";
+                std::cerr << " is at " << seg_w_min_dist[s] << " units from the old terminal vs ";
+                std::cerr << seg_w_min_dist[closest_segment] << " units of the new terminal: we remove it!" << std::endl;
+                indices_to_remove.insert(s);
+            } else {
+                seg_w_min_dist[s] -= seg_w_min_dist[closest_segment];
+            }
+        }
+    }
+    
+    // Remove all information about deleted segments
+    // We do this starting by the one of higher index, so not to invalidate
+    // the indices of other segments to delete (this, of course, causes a
+    // little bit of copies, but the vectors are small)
+    for(auto it = indices_to_remove.crbegin(); it != indices_to_remove.crend(); ++it) {
+        seg_e_ext.erase(seg_e_ext.begin() + *it);
+        seg_w_ext.erase(seg_w_ext.begin() + *it);
+        seg_length.erase(seg_length.begin() + *it);
+        seg_siding_length.erase(seg_siding_length.begin() + *it);
+        seg_type.erase(seg_type.begin() + *it);
+        seg_eastbound.erase(seg_eastbound.begin() + *it);
+        seg_westbound.erase(seg_westbound.begin() + *it);
+        seg_e_min_dist.erase(seg_e_min_dist.begin() + *it);
+        seg_w_min_dist.erase(seg_w_min_dist.begin() + *it);
+    }
+    
+    // Update the number of segments
+    ns = ns - indices_to_remove.size();
+    
+    // Add the proper segment as new destination terminal
+    for(auto s = 1; s < ns + 1; s++) {
+        if(seg_e_ext[s] == dest_seg_identifier.first && seg_w_ext[s] == dest_seg_identifier.second) {
+            tr_dest_seg[i].push_back(s);
+        }
+        for(auto orig_seg_id : orig_seg_identifiers) {
+            if(seg_e_ext[s] == orig_seg_id.first && seg_w_ext[s] == orig_seg_id.second) {
+                tr_orig_seg[i].push_back(s);
+                break;
+            }
+        }
+    }
+    
+    std::cerr << std::endl;
+    std::cerr << "**** Segments after (" << ns << ") ****" << std::endl;
+    for(auto s = 1; s < ns + 1; s++) {
+        std::cerr << "s:" << std::setw(4) << s << " (" << seg_type[s] << "), ext:" << std::setw(4) << seg_w_ext[s] << std::setw(4) << seg_e_ext[s];
+        std::cerr << ", len:" << std::setw(6) << seg_length[s] << " (" << std::setw(6) << seg_siding_length[s] << ")";
+        std::cerr << ", min dist:" << std::setw(6) << seg_w_min_dist[s] << std::setw(6) << seg_e_min_dist[s] << std::endl;
+    }
+}
+
+auto data::calculate_mows() -> void {
     mow = indicator_matrix(ns + 2, bvec(ni + 2, false));
     
     assert(mow_ext_e.size() == mow_ext_w.size());
@@ -185,7 +339,7 @@ auto data::calculate_mows() {
     }
 }
 
-auto data::calculate_schedules() {
+auto data::calculate_schedules() -> void {
     assert((int)sa_ext.size() == nt);
     assert((int)sa_times.size() == nt);
     
@@ -214,7 +368,7 @@ auto data::calculate_schedules() {
     }
 }
 
-auto data::calculate_network() {
+auto data::calculate_network() -> void {
     network = indicator_matrix(ns + 2, bvec(ns + 2, false));
     tnetwork = int_matrix_3d(nt, int_matrix(ns + 2));
     inverse_tnetwork = int_matrix_3d(nt, int_matrix(ns + 2));
@@ -280,8 +434,7 @@ auto data::calculate_network() {
     }
 }
 
-auto data::calculate_auxiliary_data() {
-    tr_max_speed = bv<double>(nt, 0);
+auto data::calculate_auxiliary_data() -> void {
     min_time_to_arrive_at = int_matrix(nt, ivec(ns + 2, 0));
     max_time_to_leave_from = int_matrix(nt, ivec(ns + 2, ni));
     min_travel_time = int_matrix(nt, ivec(ns + 2, -1));
@@ -290,8 +443,6 @@ auto data::calculate_auxiliary_data() {
     unpreferred_segments = int_matrix(nt);
         
     for(auto i = 0; i < nt; i++) {
-        tr_max_speed[i] = tr_speed_mult[i] * (tr_westbound[i] ? speed_ew : speed_we);
-                
         for(auto s = 1; s < ns + 1; s++) {
             auto time_from_w = (int) std::ceil(seg_w_min_dist[s] / tr_max_speed[i]);
             auto time_from_e = (int) std::ceil(seg_e_min_dist[s] / tr_max_speed[i]);
@@ -347,7 +498,7 @@ auto data::calculate_auxiliary_data() {
     }
 }
 
-auto data::calculate_vertices() {
+auto data::calculate_vertices() -> void {
     v = vertices_map(nt, indicator_matrix(ns + 2, bvec(ni + 2, false)));
     v_for_someone = indicator_matrix(ns + 2, bvec(ni + 2, false));
     trains_for = int_matrix_3d(ns + 2, int_matrix(ni + 2));
@@ -395,7 +546,7 @@ auto data::calculate_vertices() {
     }
 }
 
-auto data::generate_sigma_s_arcs() {
+auto data::generate_sigma_s_arcs() -> void {
     for(auto i = 0; i < nt; i++) {
         for(auto s : tr_orig_seg[i]) {
             for(auto t = 1; t <= max_time_to_leave_from[i][s] - min_travel_time[i][s]; t++) {
@@ -416,7 +567,7 @@ auto data::generate_sigma_s_arcs() {
     }
 }
 
-auto data::generate_s_tau_arcs() {
+auto data::generate_s_tau_arcs() -> void {
     for(auto i = 0; i < nt; i++) {
         for(auto s : tr_dest_seg[i]) {
             for(auto t = min_time_to_arrive_at[i][s] + min_travel_time[i][s] - 1; t <= ni; t++) {
@@ -446,7 +597,7 @@ auto data::generate_s_tau_arcs() {
     }
 }
 
-auto data::generate_stop_arcs() {
+auto data::generate_stop_arcs() -> void {
     for(auto i = 0; i < nt; i++) {
         for(auto s = 1; s < ns + 1; s++) {
             auto is_sa = false;
@@ -485,7 +636,7 @@ auto data::generate_stop_arcs() {
     }
 }
 
-auto data::generate_movement_arcs() {
+auto data::generate_movement_arcs() -> void {
     for(auto i = 0; i < nt; i++) {
         for(auto s1 = 1; s1 < ns + 1; s1++) {
             auto is_sa_1 = false;
@@ -552,7 +703,7 @@ auto data::generate_movement_arcs() {
     }
 }
 
-auto data::cleanup_adjacency() {     
+auto data::cleanup_adjacency() -> void {     
     for(auto i = 0; i < nt; i++) {
         auto clean = false;
             
@@ -603,7 +754,7 @@ auto data::cleanup_adjacency() {
     }
 }
 
-auto data::calculate_adjacency() {
+auto data::calculate_adjacency() -> void {
     std::cout << "\t\t\tAllocating memory" << std::endl;
     adj = graph_adjacency_map(nt, indicator_matrix_3d(ns + 2, indicator_matrix(ni + 2, bvec(ns + 2, false))));
     n_in = vertex_count_matrix(nt, int_matrix(ns + 2, ivec(ni + 2, 0)));
@@ -621,7 +772,7 @@ auto data::calculate_adjacency() {
     cleanup_adjacency();
 }
 
-auto data::print_adjacency() const {
+auto data::print_adjacency() const -> void {
     for(auto i = 0; i < nt; i++) {
         std::cout << "== Train " << i << std::endl;
         for(auto s1 = 0; s1 < ns + 2; s1++) {
@@ -663,6 +814,7 @@ data::data(const std::string& file_name) : file_name{file_name} {
     t_start = high_resolution_clock::now();
     
     std::cout << "\t\tCalculating origin and destination segments..." << std::endl;
+    calculate_max_speeds();
     calculate_train_orig_dest_segments();
     std::cout << "\t\tCalculating MOWs..." << std::endl;
     calculate_mows();
