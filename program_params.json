@@ -1,9 +1,16 @@
 {
+    "cplex": {
+        "threads":                                  4,
+        "time_limit":                               3600
+    },
     "model": {
         "alternative_min_travel_time_cst":          true,
         "max_travel_time_cst":                      false
     },
     "heuristics": {
-        "simplified_objective_function":            true
+        "simplified_objective_function":            false,
+        "corridor":                                 true,
+        "corridor_minutes_around_ideal":            30,
+        "corridor_pct_around_ideal":                1.05
     }
 }

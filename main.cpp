@@ -2,9 +2,9 @@
 #include <solver.h>
 
 int main(int argc, char* argv[]) {
-    data        d(argv[1]);
-    params      p(argv[2]);
-    solver      s(d, p);
+    auto p = params(argv[2]);
+    auto d = data(argv[1], p);
+    auto s = solver(d, p);
     
     s.solve();
     

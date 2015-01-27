@@ -10,12 +10,20 @@ params::params(std::string file_name) {
 
     read_json(file_name, pt);
     
+    cplex = cplex_params(
+        pt.get<int>("cplex.threads"),
+        pt.get<int>("cplex.time_limit")
+    );
+    
     model = model_params(
         pt.get<bool>("model.alternative_min_travel_time_cst"),
         pt.get<bool>("model.max_travel_time_cst")
     );
         
     heuristics = heuristics_params(
-        pt.get<bool>("heuristics.simplified_objective_function")
+        pt.get<bool>("heuristics.simplified_objective_function"),
+        pt.get<bool>("heuristics.corridor"),
+        pt.get<int>("heuristics.corridor_minutes_around_ideal"),
+        pt.get<double>("heuristics.corridor_pct_around_ideal")
     );
 }

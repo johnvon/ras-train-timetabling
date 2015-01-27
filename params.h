@@ -4,6 +4,14 @@
 #include <string>
 
 struct params {
+    struct cplex_params {
+        int threads;
+        int time_limit;
+        
+        cplex_params() {}
+        cplex_params(int threads, int time_limit) : threads{threads}, time_limit{time_limit} {}
+    };
+    
     struct model_params {
         bool alternative_min_travel_time_cst;
         bool max_travel_time_cst;
@@ -14,11 +22,15 @@ struct params {
 
     struct heuristics_params {
         bool simplified_objective_function;
+        bool corridor;
+        int corridor_minutes_around_ideal;
+        double corridor_pct_around_ideal;
     
         heuristics_params() {}
-        heuristics_params(bool simp_obj) : simplified_objective_function{simp_obj} {}
+        heuristics_params(bool simp_obj, bool corridor, int corridor_minutes_around_ideal, double corridor_pct_around_ideal) : simplified_objective_function{simp_obj}, corridor{corridor}, corridor_minutes_around_ideal{corridor_minutes_around_ideal}, corridor_pct_around_ideal{corridor_pct_around_ideal} {}
     };
     
+    cplex_params cplex;
     model_params model;
     heuristics_params heuristics;
     

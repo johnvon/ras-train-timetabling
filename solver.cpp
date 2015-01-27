@@ -526,6 +526,9 @@ void solver::solve() const {
     IloCplex cplex(model);
 
     cplex.exportModel("model.lp");
+    
+    cplex.setParam(IloCplex::TiLim, p.cplex.time_limit);
+    cplex.setParam(IloCplex::Threads, p.cplex.threads);
 
     if(!cplex.solve()) {
         std::cout << "Cplex status: " << cplex.getStatus() << " " << cplex.getCplexStatus() << std::endl;

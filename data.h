@@ -94,7 +94,7 @@ struct data {
 
     graph_adjacency_map adj; // ((train, segment1, time, segment2, [time + 1]) => bool) is the adjacency matrix of the graph of <train>
     
-    data(const std::string& file_name);
+    data(const std::string& file_name, const params& p);
     
 private:
     std::string         file_name, // Data file name
@@ -144,6 +144,8 @@ private:
 
     vertex_count_matrix n_in, // ((train, segment, time) => n) is the number of arcs going into the vertex
                         n_out; // ((train, segment, time) => n) is the number of arcs going out of the vertex
+                        
+    const params&       p;
 
     auto read_speeds(const boost::property_tree::ptree& pt) -> void;
     auto read_relevant_times(const boost::property_tree::ptree& pt) -> void;
@@ -161,9 +163,7 @@ private:
     auto calculate_vertices() -> void;
     auto calculate_adjacency() -> void;
     auto calculate_costs() -> void;
-    
-    auto recalculate_train_wt_and_dest_segments(int i) -> void;
-    
+        
     auto generate_sigma_s_arcs() -> void;
     auto generate_s_tau_arcs() -> void;
     auto generate_stop_arcs() -> void;
