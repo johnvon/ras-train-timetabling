@@ -47,6 +47,9 @@ struct data {
     using vertex_count_matrix = int_matrix_3d;
     using delay_price_map = std::unordered_map<char, double>;
     
+    std::string         file_name, // Data file name
+                        instance_name; // Instance name
+    
     int                 nt, // Number of trains
                         ns, // Number of segments
                         ni, // Number of time intervals
@@ -97,9 +100,6 @@ struct data {
     data(const std::string& file_name, const params& p);
     
 private:
-    std::string         file_name, // Data file name
-                        instance_name; // Instance name
-
     double              speed_ew, // Maximum speed East -> West
                         speed_we, // Maximum speed West -> East
                         speed_siding, // Maximum speed in sidings

@@ -25,11 +25,14 @@ struct params {
         bool corridor;
         int corridor_minutes_around_ideal;
         double corridor_pct_around_ideal;
+        bool sparsification;
+        int sparsification_keepall_range;
     
         heuristics_params() {}
-        heuristics_params(bool simp_obj, bool corridor, int corridor_minutes_around_ideal, double corridor_pct_around_ideal) : simplified_objective_function{simp_obj}, corridor{corridor}, corridor_minutes_around_ideal{corridor_minutes_around_ideal}, corridor_pct_around_ideal{corridor_pct_around_ideal} {}
+        heuristics_params(bool simp_obj, bool corridor, int corridor_minutes_around_ideal, double corridor_pct_around_ideal, bool sparsification, int sparsification_keepall_range) : simplified_objective_function{simp_obj}, corridor{corridor}, corridor_minutes_around_ideal{corridor_minutes_around_ideal}, corridor_pct_around_ideal{corridor_pct_around_ideal}, sparsification{sparsification}, sparsification_keepall_range{sparsification_keepall_range} {}
     };
     
+    std::string results_file;
     cplex_params cplex;
     model_params model;
     heuristics_params heuristics;

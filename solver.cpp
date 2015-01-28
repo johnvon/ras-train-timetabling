@@ -2,14 +2,24 @@
 
 #include <algorithm>
 #include <chrono>
+#include <fstream>
 #include <sstream>
 
 void solver::solve() const {
     using namespace std::chrono;
-    high_resolution_clock::time_point t_start, t_end;
-    duration<double> time_span;
     
-    double eps = 1e-6;
+    auto t_start = high_resolution_clock::time_point();
+    auto t_end = high_resolution_clock::time_point();
+    auto time_span = duration<double>();
+    
+    auto variable_creation_time = 0.0;
+    auto constraints_creation_time = 0.0;
+    auto objf_creation_time = 0.0;
+    auto cplex_time_at_root = 0.0;
+    auto cplex_time_total = 0.0;
+    auto obj_value = 0.0;
+    
+    std::stringstream name;
     
     IloEnv env;
     IloModel model(env);
@@ -18,15 +28,10 @@ void solver::solve() const {
     var_vector var_d(env, d.nt);
     var_matrix_2d var_e(env, d.nt);
     var_matrix_2d var_travel_time(env, d.nt);
-    
-    std::stringstream name;
         
-    std::cout << "Creating variables..." << std::endl;
     t_start = high_resolution_clock::now();
     
-    for(auto i = 0; i < d.nt; i++) {
-        std::cout << "\tTrain #" << i << std::endl;
-        
+    for(auto i = 0; i < d.nt; i++) {        
         var_x[i] = var_matrix_3d(env, d.ns + 2);
         
         name.str(""); name << "var_d_" << i; auto ub_d = std::max(d.tr_wt[i], d.ni - d.tr_wt[i]);
@@ -64,10 +69,7 @@ void solver::solve() const {
     
     t_end = high_resolution_clock::now();
     time_span = duration_cast<duration<double>>(t_end - t_start);
-    
-    std::cout << "\t" << time_span.count() << " seconds" << std::endl;
-    
-    IloObjective obj = IloMinimize(env);
+    variable_creation_time = time_span.count();
     
     cst_vector cst_exit_sigma(env, d.nt);
     cst_vector cst_enter_tau(env, d.nt);
@@ -89,7 +91,6 @@ void solver::solve() const {
     cst_matrix_2d cst_set_travel_time(env, d.nt);
     IloRange cst_positive_obj(env, 0, IloInfinity, "cst_positive_obj");
 
-    std::cout << "Adding constraints..." << std::endl;
     t_start = high_resolution_clock::now();
 
     for(auto i = 0; i < d.nt; i++) {
@@ -479,11 +480,11 @@ void solver::solve() const {
 
     t_end = high_resolution_clock::now();
     time_span = duration_cast<duration<double>>(t_end - t_start);
+    constraints_creation_time = time_span.count();
     
-    std::cout << "\t" << time_span.count() << " seconds" << std::endl;
-    
-    std::cout << "Setting objective function coefficients..." << std::endl;
     t_start = high_resolution_clock::now();
+
+    IloObjective obj = IloMinimize(env);
 
     for(auto i = 0; i < d.nt; i++) {
         obj.setLinearCoef(var_d[i], d.wt_price);
@@ -520,71 +521,56 @@ void solver::solve() const {
 
     t_end = high_resolution_clock::now();
     time_span = duration_cast<duration<double>>(t_end - t_start);
-
-    std::cout << "\t" << time_span.count() << " seconds" << std::endl;
+    objf_creation_time = time_span.count();
 
     IloCplex cplex(model);
 
-    cplex.exportModel("model.lp");
-    
+    cplex.exportModel("model.lp");    
     cplex.setParam(IloCplex::TiLim, p.cplex.time_limit);
     cplex.setParam(IloCplex::Threads, p.cplex.threads);
+    cplex.setParam(IloCplex::NodeLim, 0);
 
-    if(!cplex.solve()) {
-        std::cout << "Cplex status: " << cplex.getStatus() << " " << cplex.getCplexStatus() << std::endl;
-        return;
-    }
-
-    std::cout << "Cplex optimal value: " << cplex.getObjValue() << std::endl;
+    t_start = high_resolution_clock::now();
     
-    auto x = int_matrix_4d(d.nt, int_matrix_3d(d.ns + 2, int_matrix(d.ni + 2, ivec(d.ns + 2, 0))));
+    auto success_at_root_node = cplex.solve();
     
-    for(auto i = 0; i < d.nt; i++) {
-        std::cout << "Train " << i << std::endl;
-        auto dv = cplex.getValue(var_d[i]);
-        if(dv > eps) {
-            std::cout << "\tArrived at its terminal " << dv << " time units outside its time window" << std::endl;
-        } else {
-            std::cout << "\tArrived at its terminal within the time window" << std::endl;
-        }
+    t_end = high_resolution_clock::now();
+    time_span = duration_cast<duration<double>>(t_end - t_start);
+    cplex_time_at_root = time_span.count();
 
-        if(d.tr_sa[i]) {
-            for(auto n = 0; n < d.sa_num[i]; n++) {
-                auto ev = cplex.getValue(var_e[i][n]);
-                if(ev > eps) {
-                    std::cout << "\tArrived at its SA point " << n << ", " << ev << " time units after its time window" << std::endl;
-                } else {
-                    std::cout << "\tArrived at its SA point " << n << " within its time window" << std::endl;
-                }
-            }
-        }
+    if(!success_at_root_node) {
+        obj_value = -1; // Failure at root node
+    } else {
+        cplex.setParam(IloCplex::NodeLim, 2100000000);
         
-        for(auto s = 1; s < d.ns + 1; s++) {
-            auto ttv = cplex.getValue(var_travel_time[i][s]);
-            if(ttv > eps) {
-                std::cout << "\tRan on segment " << s << " for " << ttv << " time units more than the minimum travel time" << std::endl;
-            } else {
-                std::cout << "\tRan on segment " << s << " in the minimum possible time, or didn't run there at all" << std::endl;
-            }
-            
-            for(auto t = 1; t < d.ni + 2; t++) {
-                for(auto ss = 0; ss < d.ns + 2; ss++) {
-                    if(d.adj[i][ss][t-1][s]) {
-                        auto xv = cplex.getValue(var_x[i][ss][t-1][s]);
-                        if(xv > eps) {
-                            std::cout << "\t\t" << (s == ss ? "[" : "") << "Came from " << (ss == 0 ? "sigma" : std::to_string(ss)) << " at time " << t-1 << " and arrived in " << s << " at time " << t << (s == ss ? "]" : "") << std::endl;
-                        }
-                    }
-                    if(d.adj[i][s][t][ss]) {
-                        auto xv = cplex.getValue(var_x[i][s][t][ss]);
-                        if(xv > eps) {
-                            std::cout << "\t\t" << (s == ss ? "[" : "") << "Left " << s << " at time " << t << " and arrived in " << (ss == d.ns + 1 ? "tau" : std::to_string(ss)) << " at time " << t+1 << (s == ss ? "]" : "") << std::endl;
-                        }
-                    }
-                }
-            }
+        t_start = high_resolution_clock::now();
+        
+        auto success_at_later_node = cplex.solve();
+        
+        t_end = high_resolution_clock::now();
+        time_span = duration_cast<duration<double>>(t_end - t_start);
+        cplex_time_total = cplex_time_at_root + time_span.count();
+        
+        if(!success_at_later_node) {
+            obj_value = -2; // Failure at a later node
+        } else {
+            obj_value = cplex.getObjValue();
         }
     }
+    
+    std::ofstream results_file;
+    results_file.open(p.results_file, std::ios::out | std::ios::app);
+    
+    results_file << d.file_name << "\t";
+    results_file << std::boolalpha << p.heuristics.simplified_objective_function << "\t";
+    results_file << std::boolalpha << p.heuristics.corridor << "\t";
+    results_file << std::boolalpha << p.heuristics.sparsification << "\t";
+    results_file << variable_creation_time << "\t";
+    results_file << constraints_creation_time << "\t";
+    results_file << objf_creation_time << "\t";
+    results_file << cplex_time_at_root << "\t";
+    results_file << cplex_time_total << "\t";
+    results_file << obj_value << "\t";
     
     env.end();
 }

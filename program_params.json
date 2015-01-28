@@ -1,4 +1,5 @@
 {
+    "results_file":                                 "results.txt",
     "cplex": {
         "threads":                                  4,
         "time_limit":                               3600
@@ -11,6 +12,8 @@
         "simplified_objective_function":            false,
         "corridor":                                 true,
         "corridor_minutes_around_ideal":            30,
-        "corridor_pct_around_ideal":                1.05
+        "corridor_pct_around_ideal":                1.05,
+        "sparsification":                           true,
+        "sparsification_keepall_range":             20
     }
 }

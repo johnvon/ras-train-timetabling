@@ -10,6 +10,8 @@ params::params(std::string file_name) {
 
     read_json(file_name, pt);
     
+    results_file = pt.get<std::string>("results_file");
+    
     cplex = cplex_params(
         pt.get<int>("cplex.threads"),
         pt.get<int>("cplex.time_limit")
@@ -24,6 +26,8 @@ params::params(std::string file_name) {
         pt.get<bool>("heuristics.simplified_objective_function"),
         pt.get<bool>("heuristics.corridor"),
         pt.get<int>("heuristics.corridor_minutes_around_ideal"),
-        pt.get<double>("heuristics.corridor_pct_around_ideal")
+        pt.get<double>("heuristics.corridor_pct_around_ideal"),
+        pt.get<bool>("heuristics.sparsification"),
+        pt.get<int>("heuristics.sparsification_keepall_range")
     );
 }

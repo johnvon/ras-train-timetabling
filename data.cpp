@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cmath>
 #include <iostream>
+#include <random>
 #include <utility>
 
 #include <boost/foreach.hpp>
@@ -363,6 +364,9 @@ auto data::calculate_vertices() -> void {
     last_time_we_need_sigma = ivec(nt, 0);
     first_time_we_need_tau = ivec(nt, ni + 1);
     
+    std::random_device rd;
+    auto generator = std::mt19937(rd());
+    
     for(auto i = 0; i < nt; i++) {                
         for(auto s = 1; s < ns + 1; s++) {
             if(tr_hazmat[i] && seg_type[s] == 'S') {
@@ -389,6 +393,32 @@ auto data::calculate_vertices() -> void {
                 if(p.heuristics.corridor) {
                     if(t > p.heuristics.corridor_pct_around_ideal * (min_time_to_arrive_at[i][s] + min_travel_time[i][s]) + p.heuristics.corridor_minutes_around_ideal) {
                         continue;
+                    }
+                }
+                
+                if(p.heuristics.sparsification) {
+                    for(auto sa_n = 0u; sa_n < segments_for_sa[i].size(); sa_n++) {
+                        if(std::find(segments_for_sa[i][sa_n].begin(), segments_for_sa[i][sa_n].end(), s) != segments_for_sa[i][sa_n].end()) {
+                            auto sa_time = sa_times[i][sa_n];
+                            auto dist_from_sa_time = std::abs(t - sa_time);
+                            
+                            std::cout << "Sparsification: train " << i << " segment " << s << " time " << t << " (dist: " << dist_from_sa_time << ")" << std::endl;
+                            
+                            if(dist_from_sa_time > p.heuristics.sparsification_keepall_range) {
+                                std::cout << "\tEligible time (dist: " << dist_from_sa_time << ")" << std::endl;
+                                auto max_possible_dist = std::max(sa_time, ni - sa_time);
+                                auto distribution = std::uniform_int_distribution<>(0, (int)((max_time_to_leave_from[i][s] - min_time_to_arrive_at[i][s])/2));
+                                auto random_num = distribution(generator);
+                                
+                                std::cout << "\tInterval: [" << min_time_to_arrive_at[i][s] << "," << max_time_to_leave_from[i][s] << "]" << std::endl;
+                                std::cout << "\tRandom interval: [0," << (int)((max_time_to_leave_from[i][s] - min_time_to_arrive_at[i][s])/2) << "]" << std::endl;
+                                std::cout << "\tRandom number: " << random_num << " - Delete? " << std::boolalpha << (random_num < dist_from_sa_time) << std::endl;
+                                
+                                if(random_num < dist_from_sa_time) {
+                                    continue;
+                                }
+                            }
+                        }
                     }
                 }
                 
@@ -672,31 +702,22 @@ data::data(const std::string& file_name, const params& p) : file_name{file_name}
     read_segments(pt);
     read_trains(pt);
     read_mows(pt);
-    
-    std::cout << "Creating graphs..." << std::endl;
-    
+        
     t_start = high_resolution_clock::now();
     
-    std::cout << "\t\tCalculating origin and destination segments..." << std::endl;
     calculate_max_speeds();
     calculate_train_orig_dest_segments();
-    std::cout << "\t\tCalculating MOWs..." << std::endl;
     calculate_mows();
-    std::cout << "\t\tCalculating schedules for SA trains..." << std::endl;
     calculate_schedules();
-    std::cout << "\t\tCalculating network..." << std::endl;
     calculate_network();
-    std::cout << "\t\tCalculating auxiliary data..." << std::endl;
     calculate_auxiliary_data();
-    std::cout << "\t\tCalculating vertices..." << std::endl;
     calculate_vertices();
-    std::cout << "\t\tCalculating adjacency matrix..." << std::endl;
     calculate_adjacency();
     
     t_end = high_resolution_clock::now();
     time_span = duration_cast<duration<double>>(t_end - t_start);
     
-    std::cout << "\t" << time_span.count() << " seconds" << std::endl;
+    std::cout << "Graphs creation: " << time_span.count() << " seconds" << std::endl;
         
     // print_adjacency();
 }
