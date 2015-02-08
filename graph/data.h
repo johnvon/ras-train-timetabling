@@ -7,7 +7,7 @@
 #include <boost/container/vector.hpp>
 #include <boost/property_tree/ptree.hpp>
 
-#include <params.h>
+#include <params/params.h>
 
 /*
     SEGMENTS:       0 = sigma
@@ -56,7 +56,9 @@ struct data {
                         headway, // Time intervals between two consecutive trains
                         wt_tw_left, // Penalised if arriving at terminal with more than this advance
                         wt_tw_right, // Penalised if arriving at terminal with more than this delay
-                        sa_tw_right; // Penalised if arriving at SA point with more than this delay
+                        sa_tw_right, // Penalised if arriving at SA point with more than this delay
+                        n_nodes, // Number of nodes
+                        n_arcs; // Number of arcs
 
     double              wt_price, // Unit price for advance/delay at terminal
                         sa_price, // Unit price for delay at SA point
@@ -97,6 +99,9 @@ struct data {
 
     graph_adjacency_map adj; // ((train, segment1, time, segment2, [time + 1]) => bool) is the adjacency matrix of the graph of <train>
     
+    vertex_count_matrix n_in, // ((train, segment, time) => n) is the number of arcs going into the vertex
+                        n_out; // ((train, segment, time) => n) is the number of arcs going out of the vertex
+    
     data(const std::string& file_name, const params& p);
     
 private:
@@ -128,7 +133,7 @@ private:
                         tr_length, // Train's length
                         tr_max_speed; // Max speed of a train on the tracks
     
-    bv<char>            seg_type; // Segment type ('0', '1', '2', 'S', 'T', 'X', 'D') - 'D' used for sigma, tau
+    bv<char>            seg_type; // Segment type ('0', '1', '2', 'S', 'X', 'D') - 'D' used for sigma, tau
 
     bvec                seg_eastbound, // Is the segment's preferred direction eastbound?
                         seg_westbound, // Is the segment's preferred direction westbound?
@@ -141,9 +146,6 @@ private:
     indicator_matrix    mow, // ((segment, time) => bool) is true if there is a mow at <segment> at time <time>
                         network, // ((segment1, segment2) => bool) is true if <segment1> and <segment2> are connected
                         unpreferred; // ((train, segment) => bool) is true if <segment> is unpreferred for <train>
-
-    vertex_count_matrix n_in, // ((train, segment, time) => n) is the number of arcs going into the vertex
-                        n_out; // ((train, segment, time) => n) is the number of arcs going out of the vertex
                         
     const params&       p;
 
@@ -166,6 +168,7 @@ private:
         
     auto generate_sigma_s_arcs() -> void;
     auto generate_s_tau_arcs() -> void;
+    auto generate_escape_arcs() -> void;
     auto generate_stop_arcs() -> void;
     auto generate_movement_arcs() -> void;
     

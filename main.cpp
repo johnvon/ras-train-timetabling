@@ -1,5 +1,6 @@
-#include <data.h>
-#include <solver.h>
+#include <graph/data.h>
+#include <graph/train_graph.h>
+#include <solver/solver.h>
 
 int main(int argc, char* argv[]) {
     auto p = params(argv[2]);

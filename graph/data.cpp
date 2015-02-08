@@ -1,4 +1,4 @@
-#include <data.h>
+#include <graph/data.h>
 
 #include <algorithm>
 #include <chrono>
@@ -361,7 +361,9 @@ auto data::calculate_vertices() -> void {
     v = vertices_map(nt, indicator_matrix(ns + 2, bvec(ni + 2, false)));
     v_for_someone = indicator_matrix(ns + 2, bvec(ni + 2, false));
     trains_for = int_matrix_3d(ns + 2, int_matrix(ni + 2));
-    last_time_we_need_sigma = ivec(nt, 0);
+    last_time_we_need_sigma = ivec(nt, 0);  // Not used, because we have trains that "escape" the scenario without reaching their terminal:
+                                            // These trains might decide to enter the scenario at any time, even at a time that we know in
+                                            // Advance won't let them reach their end terminal. Therefore they might need sigma at any time
     first_time_we_need_tau = ivec(nt, ni + 1);
     
     std::random_device rd;
@@ -385,34 +387,27 @@ auto data::calculate_vertices() -> void {
                 }
             }
             
-            for(auto t = min_time_to_arrive_at[i][s]; t <= max_time_to_leave_from[i][s]; t++) {
+            for(auto t = min_time_to_arrive_at[i][s]; t < ni + 1; t++) {
                 if(mow[s][t]) {
                     continue;
                 }
                 
-                if(p.heuristics.corridor) {
-                    if(t > p.heuristics.corridor_pct_around_ideal * (min_time_to_arrive_at[i][s] + min_travel_time[i][s]) + p.heuristics.corridor_minutes_around_ideal) {
+                if(p.heuristics.corridor.active) {
+                    if(t > p.heuristics.corridor.pct_around_ideal * (min_time_to_arrive_at[i][s] + min_travel_time[i][s]) + p.heuristics.corridor.minutes_around_ideal) {
                         continue;
                     }
                 }
                 
-                if(p.heuristics.sparsification) {
+                if(p.heuristics.sparsification.active) {
                     for(auto sa_n = 0u; sa_n < segments_for_sa[i].size(); sa_n++) {
                         if(std::find(segments_for_sa[i][sa_n].begin(), segments_for_sa[i][sa_n].end(), s) != segments_for_sa[i][sa_n].end()) {
                             auto sa_time = sa_times[i][sa_n];
                             auto dist_from_sa_time = std::abs(t - sa_time);
-                            
-                            std::cout << "Sparsification: train " << i << " segment " << s << " time " << t << " (dist: " << dist_from_sa_time << ")" << std::endl;
-                            
-                            if(dist_from_sa_time > p.heuristics.sparsification_keepall_range) {
-                                std::cout << "\tEligible time (dist: " << dist_from_sa_time << ")" << std::endl;
-                                auto max_possible_dist = std::max(sa_time, ni - sa_time);
+                                                        
+                            if(dist_from_sa_time > p.heuristics.sparsification.keepall_range) {
+                                // auto max_possible_dist = std::max(sa_time, ni - sa_time);
                                 auto distribution = std::uniform_int_distribution<>(0, (int)((max_time_to_leave_from[i][s] - min_time_to_arrive_at[i][s])/2));
                                 auto random_num = distribution(generator);
-                                
-                                std::cout << "\tInterval: [" << min_time_to_arrive_at[i][s] << "," << max_time_to_leave_from[i][s] << "]" << std::endl;
-                                std::cout << "\tRandom interval: [0," << (int)((max_time_to_leave_from[i][s] - min_time_to_arrive_at[i][s])/2) << "]" << std::endl;
-                                std::cout << "\tRandom number: " << random_num << " - Delete? " << std::boolalpha << (random_num < dist_from_sa_time) << std::endl;
                                 
                                 if(random_num < dist_from_sa_time) {
                                     continue;
@@ -423,18 +418,21 @@ auto data::calculate_vertices() -> void {
                 }
                 
                 v[i][s][t] = true;
+                n_nodes++;
                 v_for_someone[s][t] = true;
                 trains_for[s][t].push_back(i);
             }
         }
         
-        for(auto t = 0; t <= last_time_we_need_sigma[i]; t++) {
+        for(auto t = 0; t < ni + 1; t++) {
             v[i][0][t] = true;
+            n_nodes++;
             trains_for[0][t].push_back(i);
         }
         
         for(auto t = first_time_we_need_tau[i]; t <= ni + 1; t++) {
             v[i][ns + 1][t] = true;
+            n_nodes++;
             trains_for[ns + 1][t].push_back(i);
         }
     }
@@ -443,18 +441,30 @@ auto data::calculate_vertices() -> void {
 auto data::generate_sigma_s_arcs() -> void {
     for(auto i = 0; i < nt; i++) {
         for(auto s : tr_orig_seg[i]) {
-            for(auto t = 1; t <= max_time_to_leave_from[i][s] - min_travel_time[i][s]; t++) {
+            for(auto t = 1; t <= ni - min_travel_time[i][s]; t++) {
                 if(
-                    (t + nt - max_time_to_leave_from[i][s] > tr_wt[i] + wt_tw_right) &&
-                    (wt_price * (t + (nt - max_time_to_leave_from[i][s]) - (tr_wt[i] + wt_tw_right)) > total_cost_ub)
+                    (t + ni - max_time_to_leave_from[i][s] > tr_wt[i] + wt_tw_right) &&
+                    (wt_price * (t + (ni - max_time_to_leave_from[i][s]) - (tr_wt[i] + wt_tw_right)) > total_cost_ub)
                 ) {
                     continue;
                 }
                 
+                if(p.heuristics.constructive.active) {
+                    if(p.heuristics.constructive.only_start_at_main && seg_type[s] == 'S') {
+                        continue;
+                    }
+                    if(p.heuristics.constructive.fix_start) {
+                        if(t != tr_entry_time[i]) {
+                            continue;
+                        }
+                    }
+                }
+
                 if(v[i][0][t-1] && v[i][s][t]) {
                     adj[i][0][t-1][s] = true;
                     n_out[i][0][t-1]++;
                     n_in[i][s][t]++;
+                    n_arcs++;
                 }
             }
         }
@@ -480,12 +490,32 @@ auto data::generate_s_tau_arcs() -> void {
                         continue;
                     }
                     
+                    if(p.heuristics.constructive.active && p.heuristics.constructive.fix_end) {
+                        if(t != tr_wt[i]) {
+                            continue;
+                        }
+                    }
+                    
                     if(v[i][ns+1][t+1] && v[i][s][t]) {
                         adj[i][s][t][ns+1] = true;
                         n_out[i][s][t]++;
                         n_in[i][ns+1][t+1]++;
+                        n_arcs++;
                     }
                 }
+            }
+        }
+    }
+}
+
+auto data::generate_escape_arcs() -> void {
+    for(auto i = 0; i < nt; i++) {
+        for(auto s = 1; s < ns + 1; s++) {
+            if(v[i][s][ni] && v[i][ns+1][ni+1]) {
+                adj[i][s][ni][ns+1] = true;
+                n_out[i][s][ni]++;
+                n_in[i][ns+1][ni+1]++;
+                n_arcs++;
             }
         }
     }
@@ -506,15 +536,15 @@ auto data::generate_stop_arcs() -> void {
                 }
             }
             
-            for(auto t = min_time_to_arrive_at[i][s]; t <= max_time_to_leave_from[i][s] - 1; t++) {
+            for(auto t = min_time_to_arrive_at[i][s]; t < ni; t++) {
                 if(t + 1 <= ni && v[i][s][t] && v[i][s][t + 1]) {
                     if(is_sa && t+1 > sa_times[i][sa_number] + sa_tw_right && sa_price * (t+1 - (sa_times[i][sa_number] + sa_tw_right)) > total_cost_ub) {
                         continue;
                     }
                     
                     if(
-                        (t+1 + nt - max_time_to_leave_from[i][s] > tr_wt[i] + wt_tw_right) &&
-                        (wt_price * (t+1 + (nt - max_time_to_leave_from[i][s]) - (tr_wt[i] + wt_tw_right)) > total_cost_ub)
+                        (t+1 + ni - max_time_to_leave_from[i][s] > tr_wt[i] + wt_tw_right) &&
+                        (wt_price * (t+1 + (ni - max_time_to_leave_from[i][s]) - (tr_wt[i] + wt_tw_right)) > total_cost_ub)
                     ) {
                         continue;
                     }
@@ -523,6 +553,7 @@ auto data::generate_stop_arcs() -> void {
                         adj[i][s][t][s] = true;
                         n_out[i][s][t]++;
                         n_in[i][s][t+1]++;
+                        n_arcs++;
                     }
                 }
             }
@@ -562,21 +593,21 @@ auto data::generate_movement_arcs() -> void {
                         }
                     }
                     
-                    for(auto t = min_time_to_arrive_at[i][s1] + min_travel_time[i][s1] - 1; t <= max_time_to_leave_from[i][s2] - min_travel_time[i][s2]; t++) {
+                    for(auto t = min_time_to_arrive_at[i][s1] + min_travel_time[i][s1] - 1; t <= ni - min_travel_time[i][s2]; t++) {
                         if(is_sa_1 && t > sa_times[i][sa_number_1] + sa_tw_right && sa_price * (t - (sa_times[i][sa_number_1] + sa_tw_right)) > total_cost_ub) {
                             continue;
                         }
                         
                         if(
-                            (t + nt - max_time_to_leave_from[i][s1] > tr_wt[i] + wt_tw_right) &&
-                            (wt_price * (t + (nt - max_time_to_leave_from[i][s1]) - (tr_wt[i] + wt_tw_right)) > total_cost_ub)
+                            (t + ni - max_time_to_leave_from[i][s1] > tr_wt[i] + wt_tw_right) &&
+                            (wt_price * (t + (ni - max_time_to_leave_from[i][s1]) - (tr_wt[i] + wt_tw_right)) > total_cost_ub)
                         ) {
                             continue;
                         }
                         
                         if(
-                            (t+1 + nt - max_time_to_leave_from[i][s2] > tr_wt[i] + wt_tw_right) &&
-                            (wt_price * (t + (nt - max_time_to_leave_from[i][s2]) - (tr_wt[i] + wt_tw_right)) > total_cost_ub)
+                            (t+1 + ni - max_time_to_leave_from[i][s2] > tr_wt[i] + wt_tw_right) &&
+                            (wt_price * (t + (ni - max_time_to_leave_from[i][s2]) - (tr_wt[i] + wt_tw_right)) > total_cost_ub)
                         ) {
                             continue;
                         }
@@ -589,6 +620,7 @@ auto data::generate_movement_arcs() -> void {
                             adj[i][s1][t][s2] = true;
                             n_out[i][s1][t]++;
                             n_in[i][s2][t+1]++;
+                            n_arcs++;
                         }
                     }
                 }
@@ -597,7 +629,7 @@ auto data::generate_movement_arcs() -> void {
     }
 }
 
-auto data::cleanup_adjacency() -> void {     
+auto data::cleanup_adjacency() -> void {
     for(auto i = 0; i < nt; i++) {
         auto clean = false;
             
@@ -620,16 +652,19 @@ auto data::cleanup_adjacency() -> void {
                                 if(t1 < ni + 1 && adj[i][s1][t1][s2]) {
                                     adj[i][s1][t1][s2] = false;
                                     n_in[i][s2][t1+1]--;
+                                    n_arcs--;
                                 }
                                 if(t1 > 0 && adj[i][s2][t1-1][s1]) {
                                     adj[i][s2][t1-1][s1] = false;
                                     n_out[i][s2][t1-1]--;
+                                    n_arcs--;
                                 }
                             }
                             
                             n_in[i][s1][t1] = 0;
                             n_out[i][s1][t1] = 0;
                             v[i][s1][t1] = false;
+                            n_nodes--;
                             
                             auto still_valid_vertex = false;
                             for(auto i = 0; i < nt; i++) {
@@ -649,20 +684,15 @@ auto data::cleanup_adjacency() -> void {
 }
 
 auto data::calculate_adjacency() -> void {
-    std::cout << "\t\t\tAllocating memory" << std::endl;
     adj = graph_adjacency_map(nt, indicator_matrix_3d(ns + 2, indicator_matrix(ni + 2, bvec(ns + 2, false))));
     n_in = vertex_count_matrix(nt, int_matrix(ns + 2, ivec(ni + 2, 0)));
     n_out = vertex_count_matrix(nt, int_matrix(ns + 2, ivec(ni + 2, 0)));
     
-    std::cout << "\t\t\tSigma - s arcs" << std::endl;
     generate_sigma_s_arcs();
-    std::cout << "\t\t\tS - tau arcs" << std::endl;
     generate_s_tau_arcs();
-    std::cout << "\t\t\tStop arcs" << std::endl;
+    generate_escape_arcs();
     generate_stop_arcs();
-    std::cout << "\t\t\tMovement arcs" << std::endl;
     generate_movement_arcs();
-    std::cout << "\t\t\tClean-up" << std::endl;
     cleanup_adjacency();
 }
 
@@ -702,6 +732,9 @@ data::data(const std::string& file_name, const params& p) : file_name{file_name}
     read_segments(pt);
     read_trains(pt);
     read_mows(pt);
+    
+    n_nodes = 0;
+    n_arcs = 0;
         
     t_start = high_resolution_clock::now();
     
@@ -719,5 +752,5 @@ data::data(const std::string& file_name, const params& p) : file_name{file_name}
     
     std::cout << "Graphs creation: " << time_span.count() << " seconds" << std::endl;
         
-    // print_adjacency();
+    print_adjacency();
 }
