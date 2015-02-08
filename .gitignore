@@ -14,10 +14,19 @@
 *.la
 *.a
 
+# Mac stuff
 *.dSYM
 .DS_Store
 
+# Cmake
+CMakeCache.txt
+CMakeFiles
 Makefile
+cmake_install.cmake
+install_manifest.txt
+build
 ras
+
+# Support files
 *.lp
 results.txt
