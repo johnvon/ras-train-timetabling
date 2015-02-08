@@ -10,10 +10,20 @@
     },
     "heuristics": {
         "simplified_objective_function":            false,
-        "corridor":                                 true,
-        "corridor_minutes_around_ideal":            30,
-        "corridor_pct_around_ideal":                1.05,
-        "sparsification":                           true,
-        "sparsification_keepall_range":             20
+        "corridor": {
+            "active":                               false,
+            "minutes_around_ideal":                 30,
+            "pct_around_ideal":                     1.05
+        },
+        "sparsification": {
+            "active":                               false,
+            "keepall_range":                        20
+        },
+        "constructive": {
+            "active":                               false,
+            "fix_start":                            true,
+            "fix_end":                              false,
+            "only_start_at_main":                   false
+        }
     }
 }
