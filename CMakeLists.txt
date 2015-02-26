@@ -38,14 +38,20 @@ include_directories(SYSTEM ${Boost_INCLUDEDIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 
 set(SOURCE_FILES
-    graph/data.h
-    graph/data.cpp
-    graph/train_graph.h
-    graph/train_graph.cpp
+    data/array.h
+    data/data.h
+    data/data.cpp
+    data/graph.h
+    data/instance.h
+    data/mows.h
+    data/network.h
+    data/prices.h
+    data/segments.h
+    data/speeds.h
+    data/time_windows.h
+    data/trains.h
     params/params.h
     params/params.cpp
-    solver/solver.h
-    solver/solver.cpp
     main.cpp)
 
 add_executable(ras ${SOURCE_FILES})

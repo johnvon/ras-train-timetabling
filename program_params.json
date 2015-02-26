@@ -4,21 +4,8 @@
         "threads":                                  4,
         "time_limit":                               3600
     },
-    "model": {
-        "alternative_min_travel_time_cst":          true,
-        "max_travel_time_cst":                      false
-    },
     "heuristics": {
         "simplified_objective_function":            false,
-        "corridor": {
-            "active":                               false,
-            "minutes_around_ideal":                 30,
-            "pct_around_ideal":                     1.05
-        },
-        "sparsification": {
-            "active":                               false,
-            "keepall_range":                        20
-        },
         "constructive": {
             "active":                               false,
             "fix_start":                            true,

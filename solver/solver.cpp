@@ -177,7 +177,7 @@ void solver::create_model(IloEnv& env, IloModel& model, var_matrix_4d& var_x, va
         cst_enter_tau[i] = IloRange(env, 1, 1, name.str().c_str());
         
         for(auto s = 1; s < d.ns + 1; s++) {
-            for(auto t = d.min_time_to_arrive_at[i][s] + d.min_travel_time[i][s] - 1; t < d.ni + 1; t++) {
+            for(auto t = d.min_time_to_arrive[i][s] + d.min_travel_time[i][s] - 1; t < d.ni + 1; t++) {
                 if(d.adj[i][s][t][d.ns+1]) {
                     cst_enter_tau[i].setLinearCoef(var_x[i][s][t][d.ns+1], 1);
                 }
@@ -202,7 +202,7 @@ void solver::create_model(IloEnv& env, IloModel& model, var_matrix_4d& var_x, va
                 cst_min_travel_time[i][s] = cst_vector(env, d.ni + 2);
             }
             
-            for(auto t = d.min_time_to_arrive_at[i][s]; t < d.ni + 1; t++) {
+            for(auto t = d.min_time_to_arrive[i][s]; t < d.ni + 1; t++) {
                 if(d.v[i][s][t]) {
                     name.str(""); name << "cst_flow_" << i << "_" << s << "_" << t;
                     cst_flow[i][s][t] = IloRange(env, 0, 0, name.str().c_str());
@@ -226,14 +226,14 @@ void solver::create_model(IloEnv& env, IloModel& model, var_matrix_4d& var_x, va
             }
             
             if(p.model.alternative_min_travel_time_cst) {
-                for(auto t = d.min_time_to_arrive_at[i][s]; t < d.ni; t++) {
+                for(auto t = d.min_time_to_arrive[i][s]; t < d.ni; t++) {
                     if(d.adj[i][s][t][s]) {
                         cst_alt_min_travel_time[i][s].setLinearCoef(var_x[i][s][t][s], -1);
                     }
                 }
                 
                 for(auto ss : d.bar_inverse_tnetwork[i][s]) {
-                    for(auto t = d.min_time_to_arrive_at[i][s]; t <= d.ni + 1; t++) {
+                    for(auto t = d.min_time_to_arrive[i][s]; t <= d.ni + 1; t++) {
                         if(d.adj[i][ss][t-1][s]) {
                             cst_alt_min_travel_time[i][s].setLinearCoef(var_x[i][ss][t-1][s], d.min_travel_time[i][s] - 1);
                         }
@@ -242,7 +242,7 @@ void solver::create_model(IloEnv& env, IloModel& model, var_matrix_4d& var_x, va
                 
                 model.add(cst_alt_min_travel_time[i]);
             } else {
-                for(auto t = d.min_time_to_arrive_at[i][s]; t <= d.ni - d.min_travel_time[i][s]; t++) {
+                for(auto t = d.min_time_to_arrive[i][s]; t <= d.ni - d.min_travel_time[i][s]; t++) {
                     if(d.v[i][s][t]) {
                         name.str(""); name << "cst_min_travel_time_" << i << "_" << s << "_" << t;
                         cst_min_travel_time[i][s][t] = IloRange(env, -IloInfinity, 1, name.str().c_str());
@@ -299,7 +299,7 @@ void solver::create_model(IloEnv& env, IloModel& model, var_matrix_4d& var_x, va
         cst_wt_delay_2[i].setLinearCoef(var_d[i], -1.0);
         
         for(auto s : d.tr_dest_seg[i]) {
-            for(auto t = d.min_time_to_arrive_at[i][s] + d.min_travel_time[i][s] - 1; t <= d.ni; t++) {
+            for(auto t = d.min_time_to_arrive[i][s] + d.min_travel_time[i][s] - 1; t <= d.ni; t++) {
                 if(d.adj[i][s][t][d.ns+1]) {
                     cst_wt_delay_1[i].setLinearCoef(var_x[i][s][t][d.ns+1], t);
                     cst_wt_delay_2[i].setLinearCoef(var_x[i][s][t][d.ns+1], t);
@@ -323,7 +323,7 @@ void solver::create_model(IloEnv& env, IloModel& model, var_matrix_4d& var_x, va
                                 
                 for(auto s : d.segments_for_sa[i][n]) {
                     for(auto ss : d.bar_tnetwork[i][s]) {
-                        for(auto t = d.min_time_to_arrive_at[i][s]; t < d.ni; t++) {
+                        for(auto t = d.min_time_to_arrive[i][s]; t < d.ni; t++) {
                             if(d.adj[i][s][t][ss]) {
                                 cst_visit_sa[i][n].setLinearCoef(var_x[i][s][t][ss], 1);
                                 cst_sa_delay[i][n].setLinearCoef(var_x[i][s][t][ss], t);
@@ -351,7 +351,7 @@ void solver::create_model(IloEnv& env, IloModel& model, var_matrix_4d& var_x, va
             cst_headway_3[i][s] = cst_vector(env, d.ni + 2);
             cst_headway_4[i][s] = cst_vector(env, d.ni + 2);
                         
-            for(auto t = d.min_time_to_arrive_at[i][s]; t < d.ni + 1; t++) {
+            for(auto t = d.min_time_to_arrive[i][s]; t < d.ni + 1; t++) {
                 if(d.v[i][s][t]) {
                     if(!d.bar_inverse_tnetwork[i][s].empty()) {
                         auto any_arc = false;
@@ -458,7 +458,7 @@ void solver::create_model(IloEnv& env, IloModel& model, var_matrix_4d& var_x, va
         for(auto s : d.sidings) {
             cst_siding[i][s] = cst_vector(env, d.ni + 2);
             
-            for(auto t = d.min_time_to_arrive_at[i][s]; t < d.ni; t++) {
+            for(auto t = d.min_time_to_arrive[i][s]; t < d.ni; t++) {
                 if(d.v[i][s][t]) {
                     name.str(""); name << "cst_siding_" << i << "_" << s << "_" << t;
                     cst_siding[i][s][t] = IloRange(env, 0, IloInfinity, name.str().c_str());
@@ -493,7 +493,7 @@ void solver::create_model(IloEnv& env, IloModel& model, var_matrix_4d& var_x, va
         for(auto s : d.xovers) {
             cst_cant_stop[i][s] = cst_vector(env, d.ni + 2);
             
-            for(auto t = d.min_time_to_arrive_at[i][s]; t <= d.ni - d.min_travel_time[i][s]; t++) {
+            for(auto t = d.min_time_to_arrive[i][s]; t <= d.ni - d.min_travel_time[i][s]; t++) {
                 if(d.v[i][s][t]) {
                     name.str(""); name << "cst_cant_stop_" << i << "_" << s << "_" << t;
                     cst_cant_stop[i][s][t] = IloRange(env, -IloInfinity, 1, name.str().c_str());
@@ -527,7 +527,7 @@ void solver::create_model(IloEnv& env, IloModel& model, var_matrix_4d& var_x, va
             for(auto s : d.sidings) {
                 cst_heavy[i][s] = cst_vector(env, d.ni + 2);
                 
-                for(auto t = d.min_time_to_arrive_at[i][s]; t < d.ni + 1; t++) {
+                for(auto t = d.min_time_to_arrive[i][s]; t < d.ni + 1; t++) {
                     name.str(""); name << "cst_heavy_" << i << "_" << s << "_" << t;
                     cst_heavy[i][s][t] = IloRange(env, -IloInfinity, 1, name.str().c_str());
                     
@@ -562,7 +562,7 @@ void solver::create_model(IloEnv& env, IloModel& model, var_matrix_4d& var_x, va
             
             cst_set_travel_time[i][s].setLinearCoef(var_travel_time[i][s], 1);
             
-            for(auto t = d.min_time_to_arrive_at[i][s]; t < d.ni + 1; t++) {
+            for(auto t = d.min_time_to_arrive[i][s]; t < d.ni + 1; t++) {
                 for(auto ss : d.bar_tnetwork[i][s]) {
                     if(d.adj[i][s][t][ss]) {
                         cst_set_travel_time[i][s].setLinearCoef(var_x[i][s][t][ss], -t);
@@ -584,7 +584,7 @@ void solver::create_model(IloEnv& env, IloModel& model, var_matrix_4d& var_x, va
     }
     
     for(auto s = 1; s < d.ns + 1; s++) {
-        auto first_time = (*std::min_element(d.min_time_to_arrive_at.begin(), d.min_time_to_arrive_at.end(), [s] (const auto& r1, const auto& r2) { return r1[s] < r2[s]; }))[s];
+        auto first_time = (*std::min_element(d.min_time_to_arrive.begin(), d.min_time_to_arrive.end(), [s] (const auto& r1, const auto& r2) { return r1[s] < r2[s]; }))[s];
         // auto last_time = (*std::max_element(d.max_time_to_leave_from.begin(), d.max_time_to_leave_from.end(), [s] (const auto& r1, const auto& r2) { return r1[s] < r2[s]; }))[s]; ### (unused because of trains that might not reach their terminal)
         
         cst_max_one_train[s] = cst_vector(env, d.ni + 2);
@@ -639,7 +639,7 @@ void solver::create_model(IloEnv& env, IloModel& model, var_matrix_4d& var_x, va
             }
         
             for(auto s : d.unpreferred_segments[i]) {
-                for(auto t = d.min_time_to_arrive_at[i][s]; t < d.ni + 1; t++) {
+                for(auto t = d.min_time_to_arrive[i][s]; t < d.ni + 1; t++) {
                     for(auto ss : d.inverse_tnetwork[i][s]) {
                         if(d.adj[i][ss][t-1][s]) {
                             obj.setLinearCoef(var_x[i][ss][t-1][s], d.unpreferred_price);
