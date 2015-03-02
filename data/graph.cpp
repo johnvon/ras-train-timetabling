@@ -6,7 +6,7 @@
 graph::graph(unsigned int nt, unsigned int ns, unsigned int ni, const params& p, const trains& trn, const mows& mnt, const segments& seg, const network& net, const time_windows& tiw, const prices& pri) {
     n_nodes = 0u;
     n_arcs = 0u;
-    v_for_someone = bool_matrix_2d(ns + 2, bool_vector(ns + 2, false));
+    v_for_someone = bool_matrix_2d(ns + 2, bool_vector(ni + 2, false));
     delta = uint_matrix_3d(nt, uint_matrix_2d(ns + 2, uint_vector()));
     inverse_delta = uint_matrix_3d(nt, uint_matrix_2d(ns + 2, uint_vector()));
     bar_delta = uint_matrix_3d(nt, uint_matrix_2d(ns + 2, uint_vector()));
