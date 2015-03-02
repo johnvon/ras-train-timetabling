@@ -44,23 +44,23 @@ graph::graph(unsigned int nt, unsigned int ns, unsigned int ni, const params& p,
 auto graph::calculate_deltas(unsigned int nt, unsigned int ns, const trains& trn, const segments& seg) -> void {
     for(auto s1 = 0u; s1 <= ns + 1; s1++) {        
         for(auto i = 0u; i < nt; i++) {
-            delta[i][s1].push_back(s1);
-            inverse_delta[i][s1].push_back(s1);
+            delta.at(i).at(s1).push_back(s1);
+            inverse_delta.at(i).at(s1).push_back(s1);
             
             if(std::find(trn.orig_segs.at(i).begin(), trn.orig_segs.at(i).end(), s1) != trn.orig_segs.at(i).end()) {
-                delta[i][0].push_back(s1);
-                inverse_delta[i][s1].push_back(0);
+                delta.at(i).at(0).push_back(s1);
+                inverse_delta.at(i).at(s1).push_back(0);
                 
-                bar_delta[i][0].push_back(s1);
-                bar_inverse_delta[i][s1].push_back(0);
+                bar_delta.at(i).at(0).push_back(s1);
+                bar_inverse_delta.at(i).at(s1).push_back(0);
             }
             
             if(std::find(trn.dest_segs.at(i).begin(), trn.dest_segs.at(i).end(), s1) != trn.dest_segs.at(i).end()) {
-                delta[i][s1].push_back(ns + 1);
-                inverse_delta[i][ns + 1].push_back(s1);
+                delta.at(i).at(s1).push_back(ns + 1);
+                inverse_delta.at(i).at(ns + 1).push_back(s1);
                 
-                bar_delta[i][s1].push_back(ns + 1);
-                bar_inverse_delta[i][ns + 1].push_back(s1);
+                bar_delta.at(i).at(s1).push_back(ns + 1);
+                bar_inverse_delta.at(i).at(ns + 1).push_back(s1);
             }
         }
         
@@ -72,8 +72,8 @@ auto graph::calculate_deltas(unsigned int nt, unsigned int ns, const trains& trn
                     ) {
                         assert(s1 != s2);
                         
-                        delta[i][s1].push_back(s2);
-                        bar_delta[i][s1].push_back(s2);
+                        delta.at(i).at(s1).push_back(s2);
+                        bar_delta.at(i).at(s1).push_back(s2);
                     }
                     
                     if( (seg.e_ext.at(s1) == seg.w_ext.at(s2) && trn.is_westbound.at(i)) ||
@@ -81,8 +81,8 @@ auto graph::calculate_deltas(unsigned int nt, unsigned int ns, const trains& trn
                     ) {
                         assert(s1 != s2);
                         
-                        inverse_delta[i][s1].push_back(s2);
-                        bar_inverse_delta[i][s1].push_back(s2);
+                        inverse_delta.at(i).at(s1).push_back(s2);
+                        bar_inverse_delta.at(i).at(s1).push_back(s2);
                     }
                 }
             }
@@ -105,7 +105,7 @@ auto graph::calculate_vertices(unsigned int nt, unsigned int ns, unsigned int ni
                 auto potential_tau_time = net.min_time_to_arrive.at(i).at(s) + net.min_travel_time.at(i).at(s) - 1;
                 
                 if(potential_tau_time < first_time_we_need_tau.at(i)) {
-                    first_time_we_need_tau[i] = potential_tau_time;
+                    first_time_we_need_tau.at(i) = potential_tau_time;
                 }
             }
             
@@ -114,23 +114,23 @@ auto graph::calculate_vertices(unsigned int nt, unsigned int ns, unsigned int ni
                     continue;
                 }
                 
-                v[i][s][t] = true;
+                v.at(i).at(s).at(t) = true;
                 n_nodes++;
-                v_for_someone[s][t] = true;
-                trains_for[s][t].push_back(i);
+                v_for_someone.at(s).at(t) = true;
+                trains_for.at(s).at(t).push_back(i);
             }
         }
         
         for(auto t = 0u; t <= ni; t++) {
-            v[i][0][t] = true;
+            v.at(i).at(0).at(t) = true;
             n_nodes++;
-            trains_for[0][t].push_back(i);
+            trains_for.at(0).at(t).push_back(i);
         }
         
         for(auto t = first_time_we_need_tau.at(i); t <= ni + 1; t++) {
-            v[i][ns + 1][t] = true;
+            v.at(i).at(ns + 1).at(t) = true;
             n_nodes++;
-            trains_for[ns + 1][t].push_back(i);
+            trains_for.at(ns + 1).at(t).push_back(i);
         }
     }
 }
@@ -151,9 +151,9 @@ auto graph::calculate_starting_arcs(unsigned int nt, unsigned int ni, const para
                 }
 
                 if(v.at(i).at(0).at(t - 1) && v.at(i).at(s).at(t)) {
-                    adj[i][0][t - 1][s] = true;
-                    n_out[i][0][t - 1]++;
-                    n_in[i][s][t]++;
+                    adj.at(i).at(0).at(t - 1).at(s) = true;
+                    n_out.at(i).at(0).at(t - 1)++;
+                    n_in.at(i).at(s).at(t)++;
                     n_arcs++;
                 }
             }
@@ -173,9 +173,9 @@ auto graph::calculate_ending_arcs(unsigned int nt, unsigned int ns, unsigned int
                     }
                     
                     if(v.at(i).at(ns + 1).at(t + 1) && v.at(i).at(s).at(t)) {
-                        adj[i][s][t][ns + 1] = true;
-                        n_out[i][s][t]++;
-                        n_in[i][ns + 1][t + 1]++;
+                        adj.at(i).at(s).at(t).at(ns + 1) = true;
+                        n_out.at(i).at(s).at(t)++;
+                        n_in.at(i).at(ns + 1).at(t + 1)++;
                         n_arcs++;
                     }
                 }
@@ -188,9 +188,9 @@ auto graph::calculate_escape_arcs(unsigned int nt, unsigned int ns, unsigned int
     for(auto i = 0u; i < nt; i++) {
         for(auto s = 1u; s <= ns; s++) {
             if(v.at(i).at(s).at(ni) && v.at(i).at(ns + 1).at(ni + 1)) {
-                adj[i][s][ni][ns + 1] = true;
-                n_out[i][s][ni]++;
-                n_in[i][ns + 1][ni + 1]++;
+                adj.at(i).at(s).at(ni).at(ns + 1) = true;
+                n_out.at(i).at(s).at(ni)++;
+                n_in.at(i).at(ns + 1).at(ni + 1)++;
                 n_arcs++;
             }
         }
@@ -202,9 +202,9 @@ auto graph::calculate_stop_arcs(unsigned int nt, unsigned int ns, unsigned int n
         for(auto s = 1u; s <= ns; s++) {            
             for(auto t = net.min_time_to_arrive.at(i).at(s); t < ni; t++) {
                 if(v.at(i).at(s).at(t) && v.at(i).at(s).at(t + 1)) {
-                    adj[i][s][t][s] = true;
-                    n_out[i][s][t]++;
-                    n_in[i][s][t + 1]++;
+                    adj.at(i).at(s).at(t).at(s) = true;
+                    n_out.at(i).at(s).at(t)++;
+                    n_in.at(i).at(s).at(t + 1)++;
                     n_arcs++;
                 }
             }
@@ -219,9 +219,9 @@ auto graph::calculate_movement_arcs(unsigned int nt, unsigned int ns, unsigned i
                 if(std::find(bar_delta.at(i).at(s1).begin(), bar_delta.at(i).at(s1).end(), s2) != bar_delta.at(i).at(s1).end()) {
                     for(auto t = net.min_time_to_arrive.at(i).at(s1) + net.min_travel_time.at(i).at(s1) - 1; t <= ni - net.min_travel_time.at(i).at(s2); t++) {                        
                         if(v.at(i).at(s1).at(t) && v.at(i).at(s2).at(t + 1)) {
-                            adj[i][s1][t][s2] = true;
-                            n_out[i][s1][t]++;
-                            n_in[i][s2][t + 1]++;
+                            adj.at(i).at(s1).at(t).at(s2) = true;
+                            n_out.at(i).at(s1).at(t)++;
+                            n_in.at(i).at(s2).at(t + 1)++;
                             n_arcs++;
                         }
                     }
@@ -252,20 +252,20 @@ auto graph::cleanup(unsigned int nt, unsigned int ns, unsigned int ni) -> void {
                         ) {
                             for(auto s2 = 0u; s2 <= ns + 1; s2++) {
                                 if(t1 <= ni && adj.at(i).at(s1).at(t1).at(s2)) {
-                                    adj[i][s1][t1][s2] = false;
-                                    n_in[i][s2][t1+1]--;
+                                    adj.at(i).at(s1).at(t1).at(s2) = false;
+                                    n_in.at(i).at(s2).at(t1 + 1)--;
                                     n_arcs--;
                                 }
                                 if(t1 > 0u && adj.at(i).at(s2).at(t1 - 1).at(s1)) {
-                                    adj[i][s2][t1 - 1][s1] = false;
-                                    n_out[i][s2][t1 - 1]--;
+                                    adj.at(i).at(s2).at(t1 - 1).at(s1) = false;
+                                    n_out.at(i).at(s2).at(t1 - 1)--;
                                     n_arcs--;
                                 }
                             }
                             
-                            n_in[i][s1][t1] = 0;
-                            n_out[i][s1][t1] = 0;
-                            v[i][s1][t1] = false;
+                            n_in.at(i).at(s1).at(t1) = 0;
+                            n_out.at(i).at(s1).at(t1) = 0;
+                            v.at(i).at(s1).at(t1) = false;
                             n_nodes--;
                             
                             auto still_valid_vertex = false;
@@ -275,7 +275,7 @@ auto graph::cleanup(unsigned int nt, unsigned int ns, unsigned int ni) -> void {
                                     break;
                                 }
                             }
-                            v_for_someone[s1][t1] = still_valid_vertex;
+                            v_for_someone.at(s1).at(t1) = still_valid_vertex;
                             clean = false;
                         }
                     }
@@ -292,12 +292,12 @@ auto graph::calculate_costs(unsigned int nt, unsigned int ns, unsigned int ni, c
                 if(adj.at(i).at(s).at(t).at(ns + 1)) {
                     if(t < trn.want_time.at(i) - tiw.wt_left) {
                         auto advance = trn.want_time.at(i) - tiw.wt_left - t;
-                        costs[i][s][t][ns + 1] = pri.wt * advance;
+                        costs.at(i).at(s).at(t).at(ns + 1) = pri.wt * advance;
                     }
                     
                     if(t > trn.want_time.at(i) + tiw.wt_right + 1) {
                         auto delay = t - trn.want_time.at(i) - tiw.wt_right - 1;
-                        costs[i][s][t][ns + 1] = pri.wt * delay;
+                        costs.at(i).at(s).at(t).at(ns + 1) = pri.wt * delay;
                     }
                 }
             }
@@ -309,7 +309,7 @@ auto graph::calculate_costs(unsigned int nt, unsigned int ns, unsigned int ni, c
                     for(auto s2 : bar_delta.at(i).at(s1)) {
                         if(adj.at(i).at(s1).at(t).at(s2)) {
                             auto delay = t - trn.sa_times.at(i).at(n) - tiw.sa_right - 1;
-                            costs[i][s1][t][s2] = pri.sa * delay;
+                            costs.at(i).at(s1).at(t).at(s2) = pri.sa * delay;
                         }
                     }
                 }
@@ -319,7 +319,7 @@ auto graph::calculate_costs(unsigned int nt, unsigned int ns, unsigned int ni, c
         for(auto s : trn.unpreferred_segs.at(i)) {
             for(auto t = net.min_time_to_arrive.at(i).at(s); t < ni; t++) {
                 if(adj.at(i).at(s).at(t).at(s)) {
-                    costs[i][s][t][s] = pri.unpreferred;
+                    costs.at(i).at(s).at(t).at(s) = pri.unpreferred;
                 }
             }
         }
