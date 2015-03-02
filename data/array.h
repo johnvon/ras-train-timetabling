@@ -14,3 +14,7 @@ using uint_matrix_3d = bv<uint_matrix_2d>;
 using bool_matrix_2d = bv<bool_vector>;
 using bool_matrix_3d = bv<bool_matrix_2d>;
 using bool_matrix_4d = bv<bool_matrix_3d>;
+
+using double_matrix_2d = bv<double_vector>;
+using double_matrix_3d = bv<double_matrix_2d>;
+using double_matrix_4d = bv<double_matrix_3d>;

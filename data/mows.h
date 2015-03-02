@@ -2,8 +2,7 @@
 #define MOWS_H
 
 #include <data/array.h>
-
-#include <utility>
+#include <data/segments.h>
 
 /*! \brief This class contains info on the maintenance of way (MOW) on the network */
 struct mows {
@@ -25,17 +24,11 @@ struct mows {
     /*! Empty constructor */
     mows() {}
     
-    /*! Basic constructor */
-    mows(    uint_vector e_ext,
-            uint_vector w_ext,
-            uint_vector start_time,
-            uint_vector end_time,
-            bool_matrix_2d is_mow
-    ) :     e_ext(std::move(e_ext)),
-            w_ext(std::move(w_ext)),
-            start_time(std::move(start_time)),
-            end_time(std::move(end_time)),
-            is_mow(std::move(is_mow)) {}
+    /*! Construct from ptree representing the JSON data file */
+    mows(const boost::property_tree::ptree& pt, unsigned int ni, unsigned int ns, const segments& seg);
+    
+private:
+    auto calculate_is_mow(unsigned int ns, const segments& seg) -> void;
 };
 
 #endif

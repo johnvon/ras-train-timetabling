@@ -42,14 +42,22 @@ set(SOURCE_FILES
     data/data.h
     data/data.cpp
     data/graph.h
+    data/graph.cpp
     data/instance.h
     data/mows.h
+    data/mows.cpp
     data/network.h
+    data/network.cpp
     data/prices.h
+    data/prices.cpp
     data/segments.h
+    data/segments.cpp
     data/speeds.h
+    data/speeds.cpp
     data/time_windows.h
+    data/time_windows.cpp
     data/trains.h
+    data/trains.cpp
     params/params.h
     params/params.cpp
     main.cpp)

@@ -2,8 +2,10 @@
 #define TRAINS_H
 
 #include <data/array.h>
+#include <data/segments.h>
+#include <data/speeds.h>
 
-#include <utility>
+#include <boost/property_tree/ptree.hpp>
 
 /*! \brief This class contains info about trains in the instance */
 struct trains {
@@ -67,7 +69,7 @@ struct trains {
     /*! List of destination segments for each train */
     uint_matrix_2d dest_segs;
     
-    /*! For (tr,s) is true iff s is unpreferred for tr */
+    /*! Indexed over tr, is the list of unpreferred segments for tr */
     uint_matrix_2d unpreferred_segs;
     
     /*! Indexed over (tr,n) is the time at which train tr should be at its n-th SA point */
@@ -79,57 +81,18 @@ struct trains {
     /*! Indexed over (tr,n) contains the list of segments corresponding to tr's n-th SA point */
     uint_matrix_3d sa_segs;
     
-    /*! First time we need tau, i.e. earliest possible arrival time at the destination terminal */
-    uint_vector first_time_we_need_tau;
-    
     /*! Empty constructor */
     trains() {}
     
-    /*! Basic constructor */
-    trains( uint_vector want_time,
-            uint_vector entry_time,
-            uint_vector tob,
-            double_vector speed_multi,
-            double_vector speed_max,
-            double_vector length,
-            uint_vector sa_num,
-            char_vector type,
-            bool_vector is_sa,
-            bool_vector is_heavy,
-            bool_vector is_eastbound,
-            bool_vector is_westbound,
-            bool_vector is_hazmat,
-            uint_vector orig_ext,
-            uint_vector dest_ext,
-            uint_matrix_2d orig_segs,
-            uint_matrix_2d dest_segs,
-            uint_matrix_2d unpreferred_segs,
-            uint_matrix_2d sa_times,
-            uint_matrix_2d sa_ext,
-            uint_matrix_3d sa_segs,
-            uint_vector first_time_we_need_tau
-    ) :     want_time(std::move(want_time)),
-            entry_time(std::move(entry_time)),
-            tob(std::move(tob)),
-            speed_multi(std::move(speed_multi)),
-            speed_max(std::move(speed_max)),
-            length(std::move(length)),
-            sa_num(std::move(sa_num)),
-            type(std::move(type)),
-            is_sa(std::move(is_sa)),
-            is_heavy(std::move(is_heavy)),
-            is_eastbound(std::move(is_eastbound)),
-            is_westbound(std::move(is_westbound)),
-            is_hazmat(std::move(is_hazmat)),
-            orig_ext(std::move(orig_ext)),
-            dest_ext(std::move(dest_ext)),
-            orig_segs(std::move(orig_segs)),
-            dest_segs(std::move(dest_segs)),
-            unpreferred_segs(std::move(unpreferred_segs)),
-            sa_times(std::move(sa_times)),
-            sa_ext(std::move(sa_ext)),
-            sa_segs(std::move(sa_segs)),
-            first_time_we_need_tau(std::move(first_time_we_need_tau)) {}
+    /*! Construct from ptree representing the JSON data file */
+    trains(const boost::property_tree::ptree& pt, unsigned int nt, unsigned int ns, unsigned int ni, const speeds& spd, const segments& seg);
+    
+private:
+    
+    auto calculate_max_speeds(unsigned int nt, const speeds& spd) -> void;
+    auto calculate_origin_and_destination_segments(unsigned int nt, unsigned int ns, const segments& seg) -> void;
+    auto calculate_unpreferred_segments(unsigned int nt, unsigned int ns, const segments& seg) -> void;
+    auto calculate_sa_segments(unsigned int nt, unsigned int ns, const segments& seg) -> void;
 };
 
 #endif

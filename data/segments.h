@@ -3,8 +3,9 @@
 
 #include <data/array.h>
 
+#include <boost/property_tree/ptree.hpp>
+
 #include <array>
-#include <utility>
 
 /*! |brief This class contains info about the segments in the network */
 struct segments {
@@ -52,25 +53,8 @@ struct segments {
     /*! Empty constructor */
     segments() {}
     
-    /*! Basic constructor */
-    segments(   uint_vector e_ext,
-                uint_vector w_ext,
-                double_vector e_min_dist,
-                double_vector w_min_dist,
-                double_vector length,
-                double_vector original_length,
-                char_vector type,
-                bool_vector is_eastbound,
-                bool_vector is_westbound
-    ) :         e_ext(std::move(e_ext)),
-                w_ext(std::move(w_ext)),
-                e_min_dist(std::move(e_min_dist)),
-                w_min_dist(std::move(w_min_dist)),
-                length(std::move(length)),
-                original_length(std::move(original_length)),
-                type(std::move(type)),
-                is_eastbound(std::move(is_eastbound)),
-                is_westbound(std::move(is_westbound)) {}
+    /*! Construct from ptree representing the JSON data file */
+    segments(const boost::property_tree::ptree& pt);
 };
 
 #endif

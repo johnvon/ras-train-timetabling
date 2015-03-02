@@ -1,6 +1,8 @@
 #ifndef TIME_WINDOWS_H
 #define TIME_WINDOWS_H
 
+#include <boost/property_tree/ptree.hpp>
+
 /*! This class contains info on the time windows at the arrival terminal and at SA points */
 struct time_windows {
     /*! Dimension of the left half-tw, starting from the train's want time at its arrival terimnal */
@@ -15,8 +17,8 @@ struct time_windows {
     /*! Empty constructor */
     time_windows() {}
     
-    /*! Basic constructor */
-    time_windows(unsigned int wt_left, unsigned int wt_right, unsigned int sa_right) : wt_left{wt_left}, wt_right{wt_right}, sa_right{sa_right} {}
+    /*! Construct from ptree representing the JSON data file */
+    time_windows(const boost::property_tree::ptree& pt, unsigned int ni);
 };
 
 #endif

@@ -1,7 +1,7 @@
 #ifndef SPEEDS_H
 #define SPEEDS_H
 
-#include <cassert>
+#include <boost/property_tree/ptree.hpp>
 
 /*! \brief This class contains info on the speed limits on segments */
 struct speeds {
@@ -23,8 +23,8 @@ struct speeds {
     /*! Empty constructor */
     speeds() {}
     
-    /*! Basic constructor */
-    speeds(double ew, double we, double siding, double swi, double xover) : ew{ew}, we{we}, siding{siding}, swi{swi}, xover{xover} {}
+    /*! Construct from ptree representing the JSON data file */
+    speeds(const boost::property_tree::ptree& pt);
 };
 
 #endif

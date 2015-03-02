@@ -75,15 +75,6 @@ struct data {
     data(const std::string& file_name, const params& p);
     
 private:
-
-    auto create_speeds(const boost::property_tree::ptree& pt) -> void;
-    auto create_time_windows(const boost::property_tree::ptree& pt) -> void;
-    auto create_prices(const boost::property_tree::ptree& pt) -> void;
-    auto create_segments(const boost::property_tree::ptree& pt) -> void;
-    
-    auto create_mows(const boost::property_tree::ptree& pt) -> void;
-        auto calculate_is_mow() -> void;
-
     auto create_trains(const boost::property_tree::ptree& pt) -> void;
         auto calculate_trains_max_speeds() -> void;
         auto calculate_trains_origin_and_destination_segments() -> void;
@@ -103,6 +94,7 @@ private:
         auto calculate_stop_arcs() -> void;
         auto calculate_movement_arcs() -> void;
         auto cleanup_graph() -> void;
+        auto calculate_costs() -> void;
 };
 
 #endif

@@ -2,8 +2,13 @@
 #define GRAPH_H
 
 #include <data/array.h>
-
-#include <utility>
+#include <data/mows.h>
+#include <data/network.h>
+#include <data/prices.h>
+#include <data/segments.h>
+#include <data/time_windows.h>
+#include <data/trains.h>
+#include <params/params.h>
 
 /*! This class contains info on the time-expanded graph */
 struct graph {
@@ -34,7 +39,7 @@ struct graph {
     /*! Indexed as (tr, s, t), is true iff (s, t) is a vertex in tr's graph */
     bool_matrix_3d v;
     
-    /*! Indexed as (tr, s1, t, s2), is true iff there is an arc from (s1, t) to (s2, t+1) in tr's graph */
+    /*! Indexed as (tr, s1, t, s2), is true iff there is an arc from (s1, t) to (s2, t + 1) in tr's graph */
     bool_matrix_4d adj;
     
     /*! Indexed as (tr, s, t), is the number of arcs going out from (s, t) in tr's graph */
@@ -43,34 +48,29 @@ struct graph {
     /*! Indexed as (tr, s, t), is the number of arcs coming in from (s, t) in tr's graph */
     uint_matrix_3d n_in;
     
+    /*! Indexed as (tr, s1, t, s2) it is the cost of arc (s1, t) -> (s2, t + 1) in tr's graph */
+    double_matrix_4d costs;
+    
+    /*! Indexed over tr, it is the first time we need tau in tr's graph, i.e. earliest possible arrival time at the destination terminal */
+    uint_vector first_time_we_need_tau;
+    
     /*! Empty constructor */
     graph() {}
     
-    /*! Basic constructor */
-    graph(  unsigned int n_nodes,
-            unsigned int n_arcs,
-            bool_matrix_2d v_for_someone,
-            uint_matrix_3d delta,
-            uint_matrix_3d inverse_delta,
-            uint_matrix_3d bar_delta,
-            uint_matrix_3d bar_inverse_delta,
-            uint_matrix_3d trains_for,
-            bool_matrix_3d v,
-            bool_matrix_4d adj,
-            uint_matrix_3d n_out,
-            uint_matrix_3d n_in)
-    :       n_nodes{n_nodes},
-            n_arcs{n_arcs},
-            v_for_someone(std::move(v_for_someone)),
-            delta(std::move(delta)),
-            inverse_delta(std::move(inverse_delta)),
-            bar_delta(std::move(bar_delta)),
-            bar_inverse_delta(std::move(bar_inverse_delta)),
-            trains_for(std::move(trains_for)),
-            v(std::move(v)),
-            adj(std::move(adj)),
-            n_out(std::move(n_out)),
-            n_in(std::move(n_in)) {}
+    /*! Construct from data already read from the JSON data file */
+    graph(unsigned int nt, unsigned int ns, unsigned int ni, const params& p, const trains& trn, const mows& mnt, const segments& seg, const network& net, const time_windows& tiw, const prices& pri);
+    
+private:
+    
+    auto calculate_deltas(unsigned int nt, unsigned int ns, const trains& trn, const segments& seg) -> void;
+    auto calculate_vertices(unsigned int nt, unsigned int ns, unsigned int ni, const trains& trn, const mows& mnt, const segments& seg, const network& net) -> void;
+    auto calculate_starting_arcs(unsigned int nt, unsigned int ni, const params& p, const trains& trn, const segments& seg, const network& net) -> void;
+    auto calculate_ending_arcs(unsigned int nt, unsigned int ns, unsigned int ni, const params& p, const trains& trn, const network& net) -> void;
+    auto calculate_escape_arcs(unsigned int nt, unsigned int ns, unsigned int ni) -> void;
+    auto calculate_stop_arcs(unsigned int nt, unsigned int ns, unsigned int ni, const network& net) -> void;
+    auto calculate_movement_arcs(unsigned int nt, unsigned int ns, unsigned int ni, const network& net) -> void;
+    auto cleanup(unsigned int nt, unsigned int ns, unsigned int ni) -> void;
+    auto calculate_costs(unsigned int nt, unsigned int ns, unsigned int ni, const trains& trn, const network& net, const time_windows& tiw, const prices& pri) -> void;
 };
 
 #endif

@@ -3,7 +3,8 @@
 
 #include <data/trains.h>
 
-#include <cassert>
+#include <boost/property_tree/ptree.hpp>
+
 #include <unordered_map>
 
 /*! \brief This class contains info about prices and penalties to pay */
@@ -25,8 +26,8 @@ struct prices {
     /*! Empty constructor */
     prices() {}
     
-    /*! Basic constructor */
-    prices(double wt, double sa, double unpreferred, delay_price_map delay) : wt{wt}, sa{sa}, unpreferred{unpreferred}, delay{delay} {}
+    /*! Construct from ptree representing the JSON data file */
+    prices(const boost::property_tree::ptree& pt);
 };
 
 #endif
