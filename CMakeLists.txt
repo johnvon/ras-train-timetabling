@@ -1,17 +1,25 @@
 cmake_minimum_required(VERSION 2.8.4)
 project(tsppddl)
 
-# CPLEX ROOT DIR HINT
-if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+if(NEED_CPLEX)
+    # DEFAULT ROOT
     set(CPLEX_ROOT_DIR "/opt/ibm" CACHE FILEPATH "IBM Cplex install dir")
-endif()
-if(CMAKE_SYSTEM_NAME STREQUAL Linux)
-    set(CPLEX_ROOT_DIR "/opt/ibm/ILOG/CPLEX_Studio126" CACHE FILEPATH "IBM Cplex install dir")
+
+    # CUSTOM ROOT
+    if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+         if(CMAKE_HOST_SYSTEM STREQUAL Cluster)
+             set(CPLEX_ROOT_DIR "/opt/ibm/ILOG/CPLEX_Studio126" CACHE FILEPATH "IBM Cplex install dir")
+         endif()
+    endif()
 endif()
 
-# BOOST ROOT DIR HINT (Linux only)
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
-    set(BOOST_ROOT "~/boost-trunk/boost")
+    if(CMAKE_HOST_SYSTEM STREQUAL Cluster)
+        set(BOOST_ROOT "~/boost-trunk/boost")
+    endif()
+    if(CMAKE_HOST_SYSTEM STREQUAL Dei207)
+        set(BOOST_ROOT "/opt/boost-trunk/boost")
+    endif()
 endif()
 
 # COMPILER: COMMON FLAGS
@@ -26,12 +34,16 @@ endif()
 
 # LOAD MODULES: cplex, boost
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-find_package(Cplex)
+if(NEED_CPLEX)
+    find_package(Cplex)
+endif()
 find_package(Boost)
 
 # INCLUDE DIRECTORIES
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-include_directories(SYSTEM ${CPLEX_INCLUDE_DIRS})
+if(NEED_CPLEX)
+    include_directories(SYSTEM ${CPLEX_INCLUDE_DIRS})
+endif()
 include_directories(SYSTEM ${Boost_INCLUDEDIR})
 
 # BUILD THE EXECUTABLE INSIDE ./build
@@ -63,4 +75,6 @@ set(SOURCE_FILES
     main.cpp)
 
 add_executable(ras ${SOURCE_FILES})
-target_link_libraries(ras ${CPLEX_LIBRARIES})
+if(NEED_CPLEX)
+    target_link_libraries(ras ${CPLEX_LIBRARIES})
+endif()
