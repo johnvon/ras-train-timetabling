@@ -12,11 +12,11 @@
 
 /*! This class contains info on the time-expanded graph */
 struct graph {
-    /*! Number of nodes in the graph */
-    unsigned int n_nodes;
+    /*! Number of nodes in the graph, for each train */
+    uint_vector n_nodes;
     
-    /*! Number of arcs in the graph */
-    unsigned int n_arcs;
+    /*! Number of arcs in the graph, for each train */
+    uint_vector n_arcs;
     
     /*! Indexed as (s, t), is true iff the couple (s, t) is a node in some train's arc */
     bool_matrix_2d v_for_someone;

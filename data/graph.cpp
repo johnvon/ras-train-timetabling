@@ -1,11 +1,10 @@
 #include <data/graph.h>
 
 #include <algorithm>
-#include <iostream>
 
 graph::graph(unsigned int nt, unsigned int ns, unsigned int ni, const params& p, const trains& trn, const mows& mnt, const segments& seg, const network& net, const time_windows& tiw, const prices& pri) {
-    n_nodes = 0u;
-    n_arcs = 0u;
+    n_nodes = uint_vector(nt, 0);
+    n_arcs = uint_vector(nt, 0);
     v_for_someone = bool_matrix_2d(ns + 2, bool_vector(ni + 2, false));
     delta = uint_matrix_3d(nt, uint_matrix_2d(ns + 2, uint_vector()));
     inverse_delta = uint_matrix_3d(nt, uint_matrix_2d(ns + 2, uint_vector()));
@@ -115,7 +114,7 @@ auto graph::calculate_vertices(unsigned int nt, unsigned int ns, unsigned int ni
                 }
                 
                 v.at(i).at(s).at(t) = true;
-                n_nodes++;
+                n_nodes.at(i)++;
                 v_for_someone.at(s).at(t) = true;
                 trains_for.at(s).at(t).push_back(i);
             }
@@ -123,13 +122,13 @@ auto graph::calculate_vertices(unsigned int nt, unsigned int ns, unsigned int ni
         
         for(auto t = 0u; t <= ni; t++) {
             v.at(i).at(0).at(t) = true;
-            n_nodes++;
+            n_nodes.at(i)++;
             trains_for.at(0).at(t).push_back(i);
         }
         
         for(auto t = first_time_we_need_tau.at(i); t <= ni + 1; t++) {
             v.at(i).at(ns + 1).at(t) = true;
-            n_nodes++;
+            n_nodes.at(i)++;
             trains_for.at(ns + 1).at(t).push_back(i);
         }
     }
@@ -138,7 +137,8 @@ auto graph::calculate_vertices(unsigned int nt, unsigned int ns, unsigned int ni
 auto graph::calculate_starting_arcs(unsigned int nt, unsigned int ni, const params& p, const trains& trn, const segments& seg, const network& net) -> void {
     for(auto i = 0u; i < nt; i++) {
         for(auto s : trn.orig_segs.at(i)) {
-            for(auto t = 1u; t <= ni - net.min_travel_time.at(i).at(s); t++) {                
+            for(auto t = 1u; t <= ni - net.min_travel_time.at(i).at(s); t++) {
+                
                 if(p.heuristics.constructive.active) {
                     if(p.heuristics.constructive.only_start_at_main && seg.type.at(s) == 'S') {
                         continue;
@@ -149,12 +149,12 @@ auto graph::calculate_starting_arcs(unsigned int nt, unsigned int ni, const para
                         }
                     }
                 }
-
+                
                 if(v.at(i).at(0).at(t - 1) && v.at(i).at(s).at(t)) {
                     adj.at(i).at(0).at(t - 1).at(s) = true;
                     n_out.at(i).at(0).at(t - 1)++;
                     n_in.at(i).at(s).at(t)++;
-                    n_arcs++;
+                    n_arcs.at(i)++;
                 }
             }
         }
@@ -176,7 +176,7 @@ auto graph::calculate_ending_arcs(unsigned int nt, unsigned int ns, unsigned int
                         adj.at(i).at(s).at(t).at(ns + 1) = true;
                         n_out.at(i).at(s).at(t)++;
                         n_in.at(i).at(ns + 1).at(t + 1)++;
-                        n_arcs++;
+                        n_arcs.at(i)++;
                     }
                 }
             }
@@ -191,7 +191,7 @@ auto graph::calculate_escape_arcs(unsigned int nt, unsigned int ns, unsigned int
                 adj.at(i).at(s).at(ni).at(ns + 1) = true;
                 n_out.at(i).at(s).at(ni)++;
                 n_in.at(i).at(ns + 1).at(ni + 1)++;
-                n_arcs++;
+                n_arcs.at(i)++;
             }
         }
     }
@@ -205,7 +205,7 @@ auto graph::calculate_stop_arcs(unsigned int nt, unsigned int ns, unsigned int n
                     adj.at(i).at(s).at(t).at(s) = true;
                     n_out.at(i).at(s).at(t)++;
                     n_in.at(i).at(s).at(t + 1)++;
-                    n_arcs++;
+                    n_arcs.at(i)++;
                 }
             }
         }
@@ -222,7 +222,7 @@ auto graph::calculate_movement_arcs(unsigned int nt, unsigned int ns, unsigned i
                             adj.at(i).at(s1).at(t).at(s2) = true;
                             n_out.at(i).at(s1).at(t)++;
                             n_in.at(i).at(s2).at(t + 1)++;
-                            n_arcs++;
+                            n_arcs.at(i)++;
                         }
                     }
                 }
@@ -234,7 +234,7 @@ auto graph::calculate_movement_arcs(unsigned int nt, unsigned int ns, unsigned i
 auto graph::cleanup(unsigned int nt, unsigned int ns, unsigned int ni) -> void {
     for(auto i = 0u; i < nt; i++) {
         auto clean = false;
-            
+
         while(!clean) {
             clean = true;
             
@@ -254,23 +254,23 @@ auto graph::cleanup(unsigned int nt, unsigned int ns, unsigned int ni) -> void {
                                 if(t1 <= ni && adj.at(i).at(s1).at(t1).at(s2)) {
                                     adj.at(i).at(s1).at(t1).at(s2) = false;
                                     n_in.at(i).at(s2).at(t1 + 1)--;
-                                    n_arcs--;
+                                    n_arcs.at(i)--;
                                 }
                                 if(t1 > 0u && adj.at(i).at(s2).at(t1 - 1).at(s1)) {
                                     adj.at(i).at(s2).at(t1 - 1).at(s1) = false;
                                     n_out.at(i).at(s2).at(t1 - 1)--;
-                                    n_arcs--;
+                                    n_arcs.at(i)--;
                                 }
                             }
-                            
+                                                        
                             n_in.at(i).at(s1).at(t1) = 0;
                             n_out.at(i).at(s1).at(t1) = 0;
                             v.at(i).at(s1).at(t1) = false;
-                            n_nodes--;
+                            n_nodes.at(i)--;
                             
                             auto still_valid_vertex = false;
-                            for(auto i = 0u; i < nt; i++) {
-                                if(v.at(i).at(s1).at(t1)) {
+                            for(auto j = 0u; j < nt; j++) {
+                                if(v.at(j).at(s1).at(t1)) {
                                     still_valid_vertex = true;
                                     break;
                                 }

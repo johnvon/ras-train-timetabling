@@ -40,6 +40,10 @@ data::data(const std::string& file_name, const params& p) : p{p} {
     auto time_span = duration_cast<duration<double>>(t_end - t_start);
     
     std::cout << "Graphs creation: " << time_span.count() << " seconds" << std::endl;
-    std::cout << "\t" << gr.n_nodes << " nodes" << std::endl;
-    std::cout << "\t" << gr.n_arcs << " arcs" << std::endl;
+    
+    for(auto i = 0u; i < nt; i++) {
+        std::cout << "Graph for train " << i << std::endl;
+        std::cout << "\t" << gr.n_nodes.at(i) << " nodes" << std::endl;
+        std::cout << "\t" << gr.n_arcs.at(i) << " arcs" << std::endl;
+    }
 }
