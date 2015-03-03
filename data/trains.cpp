@@ -64,7 +64,7 @@ trains::trains(const ptree& pt, unsigned int nt, unsigned int ns, unsigned int n
     }
     
     calculate_max_speeds(nt, spd);
-    calculate_origin_and_destination_segments(nt, nt, seg);
+    calculate_origin_and_destination_segments(nt, ns, seg);
     calculate_unpreferred_segments(nt, ns, seg);
     calculate_sa_segments(nt, ns, seg);
 }
@@ -77,7 +77,7 @@ auto trains::calculate_max_speeds(unsigned int nt, const speeds& spd) -> void {
 
 auto trains::calculate_origin_and_destination_segments(unsigned int nt, unsigned int ns, const segments& seg) -> void {
     for(auto i = 0u; i < nt; i++) {
-        for(auto s = 0u; s <= ns + 1; s++) {
+        for(auto s = 0u; s <= ns + 1; s++) {            
             if(is_eastbound.at(i) && seg.w_ext.at(s) == orig_ext.at(i)) {
                 orig_segs[i].push_back(s);
             }
