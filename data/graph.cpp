@@ -137,7 +137,7 @@ auto graph::calculate_vertices(unsigned int nt, unsigned int ns, unsigned int ni
 auto graph::calculate_starting_arcs(unsigned int nt, unsigned int ni, const params& p, const trains& trn, const segments& seg, const network& net) -> void {
     for(auto i = 0u; i < nt; i++) {
         for(auto s : trn.orig_segs.at(i)) {
-            for(auto t = 1u; t <= ni - net.min_travel_time.at(i).at(s); t++) {
+            for(auto t = trn.entry_time.at(i); t <= ni - net.min_travel_time.at(i).at(s); t++) {
                 
                 if(p.heuristics.constructive.active) {
                     if(p.heuristics.constructive.only_start_at_main && seg.type.at(s) == 'S') {
@@ -285,8 +285,17 @@ auto graph::cleanup(unsigned int nt, unsigned int ns, unsigned int ni) -> void {
     }
 }
 
-auto graph::calculate_costs(unsigned int nt, unsigned int ns, unsigned int ni, const trains& trn, const network& net, const time_windows& tiw, const prices& pri) -> void {
+auto graph::calculate_costs(unsigned int nt, unsigned int ns, unsigned int ni, const trains& trn, const network& net, const time_windows& tiw, const prices& pri) -> void {    
     for(auto i = 0u; i < nt; i++) {
+        for(auto s : trn.orig_segs.at(i)) {
+            for(auto t = trn.entry_time.at(i) + 1; t <= ni - net.min_travel_time.at(i).at(s); t++) {
+                if(adj.at(i).at(0).at(t - 1).at(s)) {
+                    auto delay = t - trn.entry_time.at(i);
+                    costs.at(i).at(0).at(t - 1).at(s) = delay * pri.delay.at(trn.type.at(i));
+                }
+            }
+        }
+        
         for(auto s : trn.dest_segs.at(i)) {
             for(auto t = net.min_time_to_arrive.at(i).at(s) + net.min_travel_time.at(i).at(s) - 1; t <= ni; t++) {
                 if(adj.at(i).at(s).at(t).at(ns + 1)) {
