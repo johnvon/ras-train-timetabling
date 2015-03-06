@@ -71,7 +71,7 @@ trains::trains(const ptree& pt, unsigned int nt, unsigned int ns, unsigned int n
 
 auto trains::calculate_max_speeds(unsigned int nt, const speeds& spd) -> void {
     for(auto i = 0u; i < nt; i++) {
-        speed_max[i] = speed_multi.at(i) * (is_westbound.at(i) ? spd.ew : spd.we);
+        speed_max.at(i) = speed_multi.at(i) * (is_westbound.at(i) ? spd.ew : spd.we);
     }
 }
 
@@ -79,16 +79,16 @@ auto trains::calculate_origin_and_destination_segments(unsigned int nt, unsigned
     for(auto i = 0u; i < nt; i++) {
         for(auto s = 0u; s <= ns + 1; s++) {            
             if(is_eastbound.at(i) && seg.w_ext.at(s) == orig_ext.at(i)) {
-                orig_segs[i].push_back(s);
+                orig_segs.at(i).push_back(s);
             }
             if(is_westbound.at(i) && seg.e_ext.at(s) == orig_ext.at(i)) {
-                orig_segs[i].push_back(s);
+                orig_segs.at(i).push_back(s);
             }
             if(is_eastbound.at(i) && seg.e_ext.at(s) == dest_ext.at(i)) {
-                dest_segs[i].push_back(s);
+                dest_segs.at(i).push_back(s);
             }
             if(is_westbound.at(i) && seg.w_ext.at(s) == dest_ext.at(i)) {
-                dest_segs[i].push_back(s);
+                dest_segs.at(i).push_back(s);
             }
         }
     }
@@ -100,7 +100,7 @@ auto trains::calculate_unpreferred_segments(unsigned int nt, unsigned int ns, co
             if( (is_westbound.at(i) && !seg.is_westbound.at(s)) ||
                 (is_eastbound.at(i) && !seg.is_eastbound.at(s))
             ) {
-                unpreferred_segs[i].push_back(s);
+                unpreferred_segs.at(i).push_back(s);
             }
         }
     }
@@ -116,7 +116,7 @@ auto trains::calculate_sa_segments(unsigned int nt, unsigned int ns, const segme
                     if( (is_westbound.at(i) && seg.w_ext.at(s) == sa_ext.at(i).at(n)) ||
                         (is_eastbound.at(i) && seg.e_ext.at(s) == sa_ext.at(i).at(n))
                     ) {
-                        sa_segs[i][n].push_back(s);
+                        sa_segs.at(i).at(n).push_back(s);
                         at_least_one_segment_found = true;
                     }
                 }

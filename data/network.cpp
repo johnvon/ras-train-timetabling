@@ -25,13 +25,13 @@ network::network(unsigned int nt, unsigned int ns, const trains& trn, const spee
             if( (trn.is_westbound.at(i) && !seg.is_westbound.at(s1)) ||
                 (trn.is_eastbound.at(i) && !seg.is_eastbound.at(s1))
             ) {
-                unpreferred[i][s1] = true;
+                unpreferred.at(i).at(s1) = true;
             }
         }
         
         for(auto s2 = 0u; s2 <= ns + 1; s2++) {
             if(seg.e_ext.at(s1) == seg.w_ext.at(s2) || seg.w_ext.at(s1) == seg.e_ext.at(s2)) {
-                connected[s1][s2] = true;
+                connected.at(s1).at(s2) = true;
             }
         }
     }
@@ -54,7 +54,7 @@ auto network::calculate_times(unsigned int nt, unsigned int ns, const trains& tr
             auto time_from_w = static_cast<unsigned int>(std::ceil(seg.w_min_dist.at(s) / trn.speed_max.at(i)));
             auto time_from_e = static_cast<unsigned int>(std::ceil(seg.e_min_dist.at(s) / trn.speed_max.at(i)));
             
-            min_time_to_arrive[i][s] = (trn.is_westbound.at(i) ? time_from_e : time_from_w) + trn.entry_time.at(i);
+            min_time_to_arrive.at(i).at(s) = (trn.is_westbound.at(i) ? time_from_e : time_from_w) + trn.entry_time.at(i);
             
             auto speed = 0.0;
             auto speed_aux = 0.0;
@@ -76,10 +76,10 @@ auto network::calculate_times(unsigned int nt, unsigned int ns, const trains& tr
             speed_aux *= trn.speed_multi.at(i);
             
             if(seg.type.at(s) != 'S') {
-                min_travel_time[i][s] = std::ceil(seg.length.at(s) / speed);
+                min_travel_time.at(i).at(s) = std::ceil(seg.length.at(s) / speed);
             } else {
-                min_travel_time[i][s] = std::ceil(seg.original_length.at(s) / speed) +
-                                        std::ceil((seg.length.at(s) - seg.original_length.at(s)) / speed_aux);
+                min_travel_time.at(i).at(s) =   std::ceil(seg.original_length.at(s) / speed) +
+                                                std::ceil((seg.length.at(s) - seg.original_length.at(s)) / speed_aux);
             }
         }
     }
@@ -95,7 +95,7 @@ auto network::calculate_main_tracks(unsigned int ns, const segments& seg) -> voi
             );
             
             if(is_main) {
-                main_tracks[s].push_back(m);
+                main_tracks.at(s).push_back(m);
             }
         }
     }

@@ -26,7 +26,7 @@ auto mows::calculate_is_mow(unsigned int ns, const segments& seg) -> void {
         for(auto s = 0u; s <= ns + 1; s++) {
             if(seg.e_ext.at(s) == e_ext.at(m) && seg.w_ext.at(s) == w_ext.at(m)) {
                 for(auto t = start_time.at(m); t <= end_time.at(m); t++) {
-                    is_mow[s][t] = true;
+                    is_mow.at(s).at(t) = true;
                 }
             }
         }
