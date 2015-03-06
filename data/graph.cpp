@@ -291,7 +291,7 @@ auto graph::calculate_costs(unsigned int nt, unsigned int ns, unsigned int ni, c
             for(auto t = trn.entry_time.at(i) + 1; t <= ni - net.min_travel_time.at(i).at(s); t++) {
                 if(adj.at(i).at(0).at(t - 1).at(s)) {
                     auto delay = t - trn.entry_time.at(i);
-                    costs.at(i).at(0).at(t - 1).at(s) = delay * pri.delay.at(trn.type.at(i));
+                    costs.at(i).at(0).at(t - 1).at(s) += delay * pri.delay.at(trn.type.at(i));
                 }
             }
         }
@@ -301,12 +301,12 @@ auto graph::calculate_costs(unsigned int nt, unsigned int ns, unsigned int ni, c
                 if(adj.at(i).at(s).at(t).at(ns + 1)) {
                     if(t < trn.want_time.at(i) - tiw.wt_left) {
                         auto advance = trn.want_time.at(i) - tiw.wt_left - t;
-                        costs.at(i).at(s).at(t).at(ns + 1) = pri.wt * advance;
+                        costs.at(i).at(s).at(t).at(ns + 1) += pri.wt * advance;
                     }
                     
                     if(t > trn.want_time.at(i) + tiw.wt_right + 1) {
                         auto delay = t - trn.want_time.at(i) - tiw.wt_right - 1;
-                        costs.at(i).at(s).at(t).at(ns + 1) = pri.wt * delay;
+                        costs.at(i).at(s).at(t).at(ns + 1) += pri.wt * delay;
                     }
                 }
             }
@@ -318,7 +318,7 @@ auto graph::calculate_costs(unsigned int nt, unsigned int ns, unsigned int ni, c
                     for(auto s2 : bar_delta.at(i).at(s1)) {
                         if(adj.at(i).at(s1).at(t).at(s2)) {
                             auto delay = t - trn.sa_times.at(i).at(n) - tiw.sa_right - 1;
-                            costs.at(i).at(s1).at(t).at(s2) = pri.sa * delay;
+                            costs.at(i).at(s1).at(t).at(s2) += pri.sa * delay;
                         }
                     }
                 }
@@ -328,7 +328,7 @@ auto graph::calculate_costs(unsigned int nt, unsigned int ns, unsigned int ni, c
         for(auto s : trn.unpreferred_segs.at(i)) {
             for(auto t = net.min_time_to_arrive.at(i).at(s); t < ni; t++) {
                 if(adj.at(i).at(s).at(t).at(s)) {
-                    costs.at(i).at(s).at(t).at(s) = pri.unpreferred;
+                    costs.at(i).at(s).at(t).at(s) += pri.unpreferred;
                 }
             }
         }
