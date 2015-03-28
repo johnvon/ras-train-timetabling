@@ -327,8 +327,10 @@ auto graph::calculate_costs(unsigned int nt, unsigned int ns, unsigned int ni, c
         
         for(auto s : trn.unpreferred_segs.at(i)) {
             for(auto t = net.min_time_to_arrive.at(i).at(s); t < ni; t++) {
-                if(adj.at(i).at(s).at(t).at(s)) {
-                    costs.at(i).at(s).at(t).at(s) += pri.unpreferred;
+                for(auto ss : inverse_delta.at(i).at(s)) {
+                    if(adj.at(i).at(ss).at(t-1).at(s)) {
+                        costs.at(i).at(ss).at(t-1).at(s) += pri.unpreferred;
+                    }
                 }
             }
         }
