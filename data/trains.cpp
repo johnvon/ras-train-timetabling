@@ -107,6 +107,9 @@ auto trains::calculate_unpreferred_segments(unsigned int nt, unsigned int ns, co
 }
 
 auto trains::calculate_sa_segments(unsigned int nt, unsigned int ns, const segments& seg) -> void {
+    // Ignore -Wunused-but-set-variable since at_least_one_segment found only makes sense when
+    // debugging, since it only appears in the assert().
+    #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
     for(auto i = 0u; i < nt; i++) {
         if(is_sa.at(i)) {
             for(auto n = 0u; n < sa_num.at(i); n++) {
@@ -125,4 +128,5 @@ auto trains::calculate_sa_segments(unsigned int nt, unsigned int ns, const segme
             }
         }
     }
+    #pragma GCC diagnostic pop
 }
