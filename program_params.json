@@ -5,7 +5,6 @@
         "time_limit":                               3600
     },
     "heuristics": {
-        "simplified_objective_function":            false,
         "constructive": {
             "active":                               false,
             "fix_start":                            true,
