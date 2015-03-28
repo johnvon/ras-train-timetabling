@@ -72,6 +72,8 @@ set(SOURCE_FILES
     data/trains.cpp
     params/params.h
     params/params.cpp
+    solver/solver.h
+    solver/solver.cpp
     main.cpp)
 
 add_executable(ras ${SOURCE_FILES})
