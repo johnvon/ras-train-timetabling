@@ -23,6 +23,7 @@ data::data(const std::string& file_name, const params& p) : p{p} {
     nt = pt.get<unsigned int>("trains_number");
     ns = pt.get<unsigned int>("segments_number");
     ni = pt.get<unsigned int>("time_intervals");
+    headway = pt.get<unsigned int>("headway");
     
     spd = speeds(pt);
     seg = segments(pt);
