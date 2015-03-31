@@ -1,5 +1,4 @@
 #include <boost/container/vector.hpp>
-#include <ilcplex/ilocplex.h>
 
 template<typename T>
 using bv = boost::container::vector<T>;
@@ -21,16 +20,20 @@ using double_matrix_2d = bv<double_vector>;
 using double_matrix_3d = bv<double_matrix_2d>;
 using double_matrix_4d = bv<double_matrix_3d>;
 
-using var_vector = IloNumVarArray;
-using var_matrix_2d = IloArray<var_vector>;
-using var_matrix_3d = IloArray<var_matrix_2d>;
-using var_matrix_4d = IloArray<var_matrix_3d>;
+#if USE_CPLEX
+    #include <ilcplex/ilocplex.h>
 
-using cst_vector = IloRangeArray;
-using cst_matrix_2d = IloArray<cst_vector>;
-using cst_matrix_3d = IloArray<cst_matrix_2d>;
+    using var_vector = IloNumVarArray;
+    using var_matrix_2d = IloArray<var_vector>;
+    using var_matrix_3d = IloArray<var_matrix_2d>;
+    using var_matrix_4d = IloArray<var_matrix_3d>;
 
-using num_vector = IloNumArray;
-using num_matrix_2d = IloArray<num_vector>;
-using num_matrix_3d = IloArray<num_matrix_2d>;
-using num_matrix_4d = IloArray<num_matrix_3d>;
+    using cst_vector = IloRangeArray;
+    using cst_matrix_2d = IloArray<cst_vector>;
+    using cst_matrix_3d = IloArray<cst_matrix_2d>;
+
+    using num_vector = IloNumArray;
+    using num_matrix_2d = IloArray<num_vector>;
+    using num_matrix_3d = IloArray<num_matrix_2d>;
+    using num_matrix_4d = IloArray<num_matrix_3d>;
+#endif

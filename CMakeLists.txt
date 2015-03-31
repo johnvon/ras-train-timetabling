@@ -11,6 +11,10 @@ if(NEED_CPLEX)
              set(CPLEX_ROOT_DIR "/opt/ibm/ILOG/CPLEX_Studio126" CACHE FILEPATH "IBM Cplex install dir")
          endif()
     endif()
+    
+    set(USE_CPLEX_FLAG "true")
+else()
+    set(USE_CPLEX_FLAG "false")
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
@@ -23,7 +27,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
 endif()
 
 # COMPILER: COMMON FLAGS
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -DIL_STD -m64 -Wall -Werror")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -DIL_STD -DUSE_CPLEX=${USE_CPLEX_FLAG} -m64 -Wall -Werror")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG=true -ggdb")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -DDEBUG=false -O3 -flto")
 
