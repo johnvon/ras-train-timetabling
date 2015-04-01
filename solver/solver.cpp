@@ -1,4 +1,5 @@
 #include <solver/solver.h>
+#include <grapher/grapher.h>
 
 #include <algorithm>
 #include <chrono>
@@ -138,6 +139,9 @@ auto solver::print_summary(IloEnv& env, IloCplex& cplex, var_matrix_4d& var_x, v
             }
         }
     }
+    
+    auto ger = grapher(d, x);
+    ger.write_data();
 }
 
 auto solver::print_results(double obj_value) -> void {
