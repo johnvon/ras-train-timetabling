@@ -16,7 +16,7 @@ struct grapher {
     grapher(const data& d, const uint_matrix_4d& x) : d{d}, x{x} {}
     
     /*! Write data to file */
-    auto write_data() -> void {}
+    auto write_data() -> void;
 };
 
 #endif
