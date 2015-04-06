@@ -13,7 +13,10 @@ auto solver::solve() -> void {
     auto t_start = high_resolution_clock::time_point();
     auto t_end = high_resolution_clock::time_point();
     auto time_span = duration<double>();
-    auto obj_value = 0.0;
+    auto lb_at_root = std::numeric_limits<double>::max();
+    auto lb_at_end = std::numeric_limits<double>::max();
+    auto ub_at_root = std::numeric_limits<double>::max();
+    auto ub_at_end = std::numeric_limits<double>::max();
     
     IloEnv env;
     IloModel model(env);
@@ -43,8 +46,10 @@ auto solver::solve() -> void {
     // Not having found a feasible solution is ok, we can still find it later.
     if(!success_at_root_node && cplex.getCplexStatus() != IloCplex::NodeLimInfeas) {
         std::cout << "Cplex infeasible at root node: " << cplex.getStatus() << " - " << cplex.getCplexStatus() << std::endl;
-        obj_value = -1; // Failure at root node
     } else {
+        lb_at_root = cplex.getBestObjValue();
+        ub_at_root = cplex.getObjValue();
+        
         cplex.setParam(IloCplex::NodeLim, 2100000000);
         
         t_start = high_resolution_clock::now();
@@ -57,17 +62,14 @@ auto solver::solve() -> void {
         
         if(!success_at_later_node) {
             std::cout << "Cplex infeasible at later node: " << cplex.getStatus() << " - " << cplex.getCplexStatus() << std::endl;
-            obj_value = -2; // Failure at a later node
         } else {
-            obj_value = cplex.getObjValue();
+            lb_at_end = cplex.getBestObjValue();
+            ub_at_end = cplex.getObjValue();
+            std::cout << "Cplex UB value: " << ub_at_end << std::endl;
         }
     }
     
-    if(obj_value >= 0) {
-        std::cout << "Cplex ojective value: " << obj_value << std::endl;
-    }
-    
-    print_results(obj_value);
+    print_results(ub_at_root, ub_at_end, lb_at_root, lb_at_end);
     print_summary(env, cplex, var_x, var_excess_travel_time);
     
     env.end();
@@ -141,10 +143,10 @@ auto solver::print_summary(IloEnv& env, IloCplex& cplex, var_matrix_4d& var_x, v
     }
     
     auto ger = grapher(d, x);
-    ger.write_data();
+    ger.write_graph();
 }
 
-auto solver::print_results(double obj_value) -> void {
+auto solver::print_results(double ub_at_root, double ub_at_end, double lb_at_root, double lb_at_end) -> void {
     std::ofstream results_file;
     results_file.open(d.p.results_file, std::ios::out | std::ios::app);
     
@@ -154,7 +156,12 @@ auto solver::print_results(double obj_value) -> void {
     results_file << t.objf_creation << "\t";
     results_file << t.cplex_at_root << "\t";
     results_file << t.cplex_total << "\t";
-    results_file << obj_value << std::endl;
+    results_file << ub_at_root << "\t";
+    results_file << ub_at_end << "\t";
+    results_file << lb_at_root << "\t";
+    results_file << lb_at_end << std::endl;
+    
+    results_file.close();
 }
 
 auto solver::create_variables(IloEnv& env, var_matrix_4d& var_x, var_matrix_2d& var_excess_travel_time) -> void {

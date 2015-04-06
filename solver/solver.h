@@ -58,7 +58,7 @@ private:
     auto create_constraints_heavy(IloEnv& env, IloModel& model, var_matrix_4d& var_x) -> void;
     auto create_constraints_cant_stop(IloEnv& env, IloModel& model, var_matrix_2d& var_excess_travel_time) -> void;
     
-    auto print_results(double obj_value) -> void;
+    auto print_results(double ub_at_root, double ub_at_end, double lb_at_root, double lb_at_end) -> void;
     auto print_summary(IloEnv& env, IloCplex& cplex, var_matrix_4d& var_x, var_matrix_2d& var_excess_travel_time) -> void;
 };
 
