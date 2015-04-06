@@ -2,7 +2,7 @@
 #include <grapher/gnuplot-iostream.h>
 
 auto grapher::generate_points() -> grapher::points_data {
-    auto points = points_data();
+    auto points = points_data(d.nt);
     
     for(auto i = 0u; i < d.nt; i++) {
         auto current_seg = 0u;
