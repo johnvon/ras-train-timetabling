@@ -1,5 +1,8 @@
 #include <solver/solver.h>
-#include <grapher/grapher.h>
+
+#if USE_GRAPHER
+    #include <grapher/grapher.h>
+#endif
 
 #include <algorithm>
 #include <chrono>
@@ -142,8 +145,10 @@ auto solver::print_summary(IloEnv& env, IloCplex& cplex, var_matrix_4d& var_x, v
         }
     }
     
-    auto ger = grapher(d, x);
-    ger.write_graph();
+    #if USE_GRAPHER
+        auto ger = grapher(d, x);
+        ger.write_graph();
+    #endif
 }
 
 auto solver::print_results(double ub_at_root, double ub_at_end, double lb_at_root, double lb_at_end) -> void {

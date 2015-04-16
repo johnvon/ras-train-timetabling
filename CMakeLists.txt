@@ -38,8 +38,22 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
     endif()
 endif()
 
+# === BOOST COMPILED
+if(NEED_BOOST_COMPILED)
+  set(BOOST_COMPILED_COMPONENTS filesystem iostreams system)
+  set(USE_BOOST_COMPILED_SOURCE_FILES
+    grapher/grapher.h
+    grapher/grapher.cpp
+    grapher/gnuplot-iostream.h
+  )
+  set(USE_GRAPHER_FLAG "true")
+else()
+  set(USE_BOOST_COMPILED_SOURCE_FILES "")
+  set(USE_GRAPHER_FLAG "false")
+endif()
+
 # COMPILER: COMMON FLAGS
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -DIL_STD -DUSE_CPLEX=${USE_CPLEX_FLAG} -m64 -Wall -Werror")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -DIL_STD -DUSE_CPLEX=${USE_CPLEX_FLAG} -DUSE_GRAPHER=${USE_GRAPHER_FLAG} -m64 -Wall -Werror")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG=true -ggdb")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -DDEBUG=false -O3 -flto")
 
@@ -53,7 +67,11 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 if(NEED_CPLEX)
     find_package(Cplex)
 endif()
-find_package(Boost COMPONENTS filesystem iostreams system REQUIRED)
+if(NEED_BOOST_COMPILED)
+  find_package(Boost COMPONENTS ${BOOST_COMPILED_COMPONENTS} REQUIRED)
+else()
+  find_package(Boost)
+endif()
 
 # INCLUDE DIRECTORIES
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
@@ -86,11 +104,9 @@ set(SOURCE_FILES
     data/time_windows.cpp
     data/trains.h
     data/trains.cpp
-    grapher/grapher.h
-    grapher/grapher.cpp
-    grapher/gnuplot-iostream.h
     params/params.h
     params/params.cpp
+    ${USE_BOOST_COMPILED_SOURCE_FILES}
     ${USE_CPLEX_SOURCE_FILES}
     main.cpp)
 
@@ -101,4 +117,6 @@ add_executable(ras ${SOURCE_FILES})
 if(NEED_CPLEX)
     target_link_libraries(ras ${CPLEX_LIBRARIES})
 endif()
-target_link_libraries(ras ${Boost_FILESYSTEM_LIBRARY} ${Boost_IOSTREAMS_LIBRARY} ${Boost_SYSTEM_LIBRARY})
+if(NEED_BOOST_COMPILED)
+  target_link_libraries(ras ${Boost_FILESYSTEM_LIBRARY} ${Boost_IOSTREAMS_LIBRARY} ${Boost_SYSTEM_LIBRARY})
+endif()
