@@ -107,10 +107,10 @@ auto solver::print_summary(IloEnv& env, IloCplex& cplex, var_matrix_4d& var_x, v
         
         auto current_seg = 0u;
         auto current_time = 0u;
-        auto current_entry_time = -1l;
+        auto current_entry_time = -1;
     
         while(current_seg != d.ns + 1) {
-            auto next_seg = -1l;
+            auto next_seg = -1;
             
             for(auto s : d.gr.delta[i][current_seg]) {
                 if(x[i][current_seg][current_time][s] > 0u) {
@@ -125,7 +125,7 @@ auto solver::print_summary(IloEnv& env, IloCplex& cplex, var_matrix_4d& var_x, v
             }
                 
             if(next_seg >= 0) {
-                if(next_seg != current_seg) {
+                if(static_cast<unsigned int>(next_seg) != current_seg) {
                     if(current_entry_time >= 0l) {
                         std::cout << "\tLeaving at time: " << current_time << std::endl;
                         std::cout << "\tRunning time: " << (current_time - current_entry_time + 1) << std::endl;
