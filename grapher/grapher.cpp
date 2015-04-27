@@ -7,11 +7,11 @@ auto grapher::generate_points() -> grapher::points_data {
     for(auto i = 0u; i < d.nt; i++) {
         auto current_seg = 0u;
         auto current_time = 0u;
-        auto current_entry_time = -1l;
+        auto current_entry_time = -1;
         points.at(i) = series_data();
     
         while(current_seg != d.ns + 1) {
-            auto next_seg = -1l;
+            auto next_seg = -1;
             auto escaping = false;
             
             for(auto s : d.gr.delta[i][current_seg]) {
@@ -28,7 +28,7 @@ auto grapher::generate_points() -> grapher::points_data {
             }
                 
             if(next_seg >= 0) {
-                if(next_seg != current_seg) {
+                if(static_cast<unsigned int>(next_seg) != current_seg) {
                     if(current_entry_time >= 0l) {
                         // Coming from another segment
                         
