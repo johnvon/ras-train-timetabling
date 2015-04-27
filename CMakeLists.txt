@@ -11,6 +11,9 @@ if(NEED_CPLEX)
          if(BUILDING_FOR_CLUSTER)
              set(CPLEX_ROOT_DIR "/opt/ibm/ILOG/CPLEX_Studio126" CACHE FILEPATH "IBM Cplex install dir")
          endif()
+         if(BUILDING_FOR_DBG_MACHINE)
+             set(CPLEX_ROOT_DIR "/home/alberto/cplex" CACHE FILEPATH "IBM Cplex install dir")
+         endif()
     endif()
     
     set(USE_CPLEX_FLAG "true")
@@ -53,9 +56,17 @@ else()
 endif()
 
 # COMPILER: COMMON FLAGS
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -DIL_STD -DUSE_CPLEX=${USE_CPLEX_FLAG} -DUSE_GRAPHER=${USE_GRAPHER_FLAG} -m64 -Wall -Werror")
+if(BUILDING_FOR_DBG_MACHINE)
+    set(ADDITIONAL_FLAGS "")
+    set(ADDITIONAL_RELEASE_FLAGS "")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L/usr/lib/i386-linux-gnu")
+else()
+    set(ADDITIONAL_FLAGS "-m64")
+    set(ADDITIONAL_RELEASE_FLAGS "-flto")
+endif()
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -DIL_STD -DUSE_CPLEX=${USE_CPLEX_FLAG} -DUSE_GRAPHER=${USE_GRAPHER_FLAG} -Wall -Werror ${ADDITIONAL_FLAGS}")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG=true -ggdb")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -DDEBUG=false -O3 -flto")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -DDEBUG=false -O3 ${ADDITIONAL_RELEASE_FLAGS}")
 
 # COMPILER: PLATFORM-DEPENDENT FLAGS
 if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
@@ -78,7 +89,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 if(NEED_CPLEX)
     include_directories(SYSTEM ${CPLEX_INCLUDE_DIRS})
 endif()
-include_directories(SYSTEM ${Boost_INCLUDEDIR})
+include_directories(SYSTEM ${Boost_INCLUDE_DIR})
 
 # BUILD THE EXECUTABLE INSIDE ./build
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
