@@ -9,6 +9,7 @@
 #include <fstream>
 #include <sstream>
 #include <thread>
+#include <limits>
 
 auto solver::solve() -> void {
     using namespace std::chrono;
