@@ -96,10 +96,14 @@ auto grapher::write_graph() -> void {
     auto points = generate_points();
     Gnuplot gp;
     
+    gp << "set terminal png size 2048" << std::endl;
+    gp << "set output \"graph.png\"" << std::endl;
+    
     for(auto i = 0u; i < d.nt; i++) {
-        gp << "set terminal png size 2048" << std::endl;
-        gp << "set output \"graph.png\"" << std::endl;
         gp << "plot '-' title \"Train " << i << "\" with lines" << std::endl;
         gp.send1d(points.at(i));
+        if(i != d.nt - 1) {
+            gp << ", ";
+        }
     }
 }
