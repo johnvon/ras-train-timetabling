@@ -47,29 +47,45 @@ auto solver::solve() -> void {
     // Check that CPLEX gives a negative status at root, but not just because it couldn't find a feasible solution.
     // In fact, we want to stop only if the problem is proven infeasible.
     // Not having found a feasible solution is ok, we can still find it later.
-    if(!success_at_root_node && cplex.getCplexStatus() != IloCplex::NodeLimInfeas) {
-        std::cout << "Cplex infeasible at root node: " << cplex.getStatus() << " - " << cplex.getCplexStatus() << std::endl;
-    } else {
-        lb_at_root = cplex.getBestObjValue();
+    iif(!success_at_root_node && cplex.getCplexStatus() != IloCplex::NodeLimInfeas) {
+        std::cerr << "bc_solver.cpp::solve() \t CPLEX problem encountered at root node" << std::endl;
+        std::cerr << "bc_solver.cpp::solve() \t CPLEX status: " << cplex.getStatus() << std::endl;
+        std::cerr << "bc_solver.cpp::solve() \t CPLEX ext status: " << cplex.getCplexStatus() << std::endl;
+        
+        cplex.exportModel("model_err.lp");
+        throw std::runtime_error("Some error occurred or the problem is infeasible");
+    }
+    
+    lb_at_root = cplex.getBestObjValue();
+    
+    if(cplex.isPrimalFeasible()) {
         ub_at_root = cplex.getObjValue();
+    } else {
+        ub_at_root = std::numeric_limits<double>::max();
+    }
+    
+    cplex.setParam(IloCplex::NodeLim, 2100000000);
+    
+    t_start = high_resolution_clock::now();
+    
+    auto success_at_later_node = cplex.solve();
+    
+    t_end = high_resolution_clock::now();
+    time_span = duration_cast<duration<double>>(t_end - t_start);
+    t.cplex_total = t.cplex_at_root + time_span.count();
+    
+    if(!success_at_later_node) {
+        std::cout << "Cplex infeasible at later node: " << cplex.getStatus() << " - " << cplex.getCplexStatus() << std::endl;
+    } else {
+        lb_at_end = cplex.getBestObjValue();
         
-        cplex.setParam(IloCplex::NodeLim, 2100000000);
-        
-        t_start = high_resolution_clock::now();
-        
-        auto success_at_later_node = cplex.solve();
-        
-        t_end = high_resolution_clock::now();
-        time_span = duration_cast<duration<double>>(t_end - t_start);
-        t.cplex_total = t.cplex_at_root + time_span.count();
-        
-        if(!success_at_later_node) {
-            std::cout << "Cplex infeasible at later node: " << cplex.getStatus() << " - " << cplex.getCplexStatus() << std::endl;
-        } else {
-            lb_at_end = cplex.getBestObjValue();
+        if(cplex.isPrimalFeasible()) {
             ub_at_end = cplex.getObjValue();
-            std::cout << "Cplex UB value: " << ub_at_end << std::endl;
+        } else {
+            ub_at_end = std::numeric_lmits<double>::max();
         }
+        
+        std::cout << "Cplex UB value: " << ub_at_end << std::endl;
     }
     
     print_results(ub_at_root, ub_at_end, lb_at_root, lb_at_end);

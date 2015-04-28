@@ -98,12 +98,14 @@ auto grapher::write_graph() -> void {
     
     gp << "set terminal png size 2048" << std::endl;
     gp << "set output \"graph.png\"" << std::endl;
+    gp << "plot ";
     
     for(auto i = 0u; i < d.nt; i++) {
-        gp << "plot '-' title \"Train " << i << "\" with lines" << std::endl;
-        gp.send1d(points.at(i));
+        gp << gp.file1d(points.at(i)) << " title \"Train " << i << "\" with lines";
         if(i != d.nt - 1) {
-            gp << ", ";
+            gp << ",";
         }
     }
+    
+    gp << std::endl;
 }
