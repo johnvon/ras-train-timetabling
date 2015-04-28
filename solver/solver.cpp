@@ -111,6 +111,11 @@ auto solver::print_summary(IloEnv& env, IloCplex& cplex, var_matrix_4d& var_x, v
     
         while(current_seg != d.ns + 1) {
             auto next_seg = -1;
+                        
+            if(current_time >= d.ni + 1) {
+                std::cerr << "Could not find a valid path!" << std::endl;
+                break;
+            }
             
             for(auto s : d.gr.delta[i][current_seg]) {
                 if(x[i][current_seg][current_time][s] > 0u) {
@@ -139,9 +144,10 @@ auto solver::print_summary(IloEnv& env, IloCplex& cplex, var_matrix_4d& var_x, v
                     
                     current_entry_time = static_cast<long>(current_time + 1);
                 }
-                current_time++;
                 current_seg = next_seg;
             }
+            
+            current_time++;
         }
     }
     

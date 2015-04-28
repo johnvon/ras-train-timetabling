@@ -26,6 +26,11 @@ auto grapher::generate_points() -> grapher::points_data {
                     escaping = true;
                 }
             }
+            
+            if(current_time >= d.ni + 1) {
+                std::cerr << "Could not find a valid path!" << std::endl;
+                break;
+            }
                 
             if(next_seg >= 0) {
                 if(static_cast<unsigned int>(next_seg) != current_seg) {
@@ -77,9 +82,10 @@ auto grapher::generate_points() -> grapher::points_data {
                     
                     current_entry_time = static_cast<long>(current_time + 1);
                 }
-                current_time++;
                 current_seg = next_seg;
             }
+            
+            current_time++;
         }
     }
     
