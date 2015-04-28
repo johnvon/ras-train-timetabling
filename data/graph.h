@@ -63,7 +63,7 @@ struct graph {
 private:
     
     auto calculate_deltas(unsigned int nt, unsigned int ns, const trains& trn, const segments& seg) -> void;
-    auto calculate_vertices(unsigned int nt, unsigned int ns, unsigned int ni, const trains& trn, const mows& mnt, const segments& seg, const network& net) -> void;
+    auto calculate_vertices(unsigned int nt, unsigned int ns, unsigned int ni, const params& p, const trains& trn, const mows& mnt, const segments& seg, const network& net) -> void;
     auto calculate_starting_arcs(unsigned int nt, unsigned int ni, const params& p, const trains& trn, const segments& seg, const network& net) -> void;
     auto calculate_ending_arcs(unsigned int nt, unsigned int ns, unsigned int ni, const params& p, const trains& trn, const network& net) -> void;
     auto calculate_escape_arcs(unsigned int nt, unsigned int ns, unsigned int ni) -> void;

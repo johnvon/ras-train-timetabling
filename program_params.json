@@ -6,10 +6,14 @@
     },
     "heuristics": {
         "constructive": {
-            "active":                               false,
-            "fix_start":                            true,
+            "active":                               true,
+            "fix_start":                            false,
             "fix_end":                              false,
-            "only_start_at_main":                   false
+            "only_start_at_main":                   false,
+            "corridor": {
+                "active":                           true,
+                "max_delay_over_fastest_route":     30
+            }
         }
     }
 }

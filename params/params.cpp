@@ -21,7 +21,11 @@ params::params(std::string file_name) {
             pt.get<bool>("heuristics.constructive.active"),
             pt.get<bool>("heuristics.constructive.fix_start"),
             pt.get<bool>("heuristics.constructive.fix_end"),
-            pt.get<bool>("heuristics.constructive.only_start_at_main")
+            pt.get<bool>("heuristics.constructive.only_start_at_main"),
+            heuristics_params::mip_constructive_params::corridor_params(
+                pt.get<bool>("heuristics.constructive.corridor.active"),
+                pt.get<unsigned int>("heuristics.constructive.corridor.max_delay_over_fastest_route")
+            )
         )
     );
 }

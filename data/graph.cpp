@@ -19,7 +19,7 @@ graph::graph(unsigned int nt, unsigned int ns, unsigned int ni, const params& p,
     first_time_we_need_tau = uint_vector(nt, 0u);
         
     calculate_deltas(nt, ns, trn, seg);
-    calculate_vertices(nt, ns, ni, trn, mnt, seg, net);
+    calculate_vertices(nt, ns, ni, p, trn, mnt, seg, net);
     calculate_starting_arcs(nt, ni, p, trn, seg, net);
     calculate_ending_arcs(nt, ns, ni, p, trn, net);
     calculate_escape_arcs(nt, ns, ni);
@@ -89,7 +89,7 @@ auto graph::calculate_deltas(unsigned int nt, unsigned int ns, const trains& trn
     }
 }
 
-auto graph::calculate_vertices(unsigned int nt, unsigned int ns, unsigned int ni, const trains& trn, const mows& mnt, const segments& seg, const network& net) -> void {
+auto graph::calculate_vertices(unsigned int nt, unsigned int ns, unsigned int ni, const params& p, const trains& trn, const mows& mnt, const segments& seg, const network& net) -> void {
     for(auto i = 0u; i < nt; i++) {                
         for(auto s = 1u; s <= ns; s++) {
             if(trn.is_hazmat.at(i) && seg.type.at(s) == 'S') {
@@ -110,6 +110,13 @@ auto graph::calculate_vertices(unsigned int nt, unsigned int ns, unsigned int ni
             
             for(auto t = net.min_time_to_arrive.at(i).at(s); t <= ni; t++) {
                 if(mnt.is_mow.at(s).at(t)) {
+                    continue;
+                }
+                
+                if( p.heuristics.constructive.acrive &&
+                    p.heuristics.constructive.corridor.active &&
+                    t > net.min_time_to_arrive.at(i).at(s) + p.heuristics.constructive.corridor.max_delay_over_fastest_route
+                ) {
                     continue;
                 }
                 
