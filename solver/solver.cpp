@@ -83,7 +83,7 @@ auto solver::solve() -> void {
         if(cplex.isPrimalFeasible()) {
             ub_at_end = cplex.getObjValue();
         } else {
-            ub_at_end = std::numeric_lmits<double>::max();
+            ub_at_end = std::numeric_limits<double>::max();
         }
         
         std::cout << "Cplex UB value: " << ub_at_end << std::endl;
