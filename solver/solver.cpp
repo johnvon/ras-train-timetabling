@@ -48,7 +48,7 @@ auto solver::solve() -> void {
     // Check that CPLEX gives a negative status at root, but not just because it couldn't find a feasible solution.
     // In fact, we want to stop only if the problem is proven infeasible.
     // Not having found a feasible solution is ok, we can still find it later.
-    iif(!success_at_root_node && cplex.getCplexStatus() != IloCplex::NodeLimInfeas) {
+    if(!success_at_root_node && cplex.getCplexStatus() != IloCplex::NodeLimInfeas) {
         std::cerr << "bc_solver.cpp::solve() \t CPLEX problem encountered at root node" << std::endl;
         std::cerr << "bc_solver.cpp::solve() \t CPLEX status: " << cplex.getStatus() << std::endl;
         std::cerr << "bc_solver.cpp::solve() \t CPLEX ext status: " << cplex.getCplexStatus() << std::endl;
