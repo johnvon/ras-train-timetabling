@@ -113,7 +113,7 @@ auto graph::calculate_vertices(unsigned int nt, unsigned int ns, unsigned int ni
                     continue;
                 }
                 
-                if( p.heuristics.constructive.acrive &&
+                if( p.heuristics.constructive.active &&
                     p.heuristics.constructive.corridor.active &&
                     t > net.min_time_to_arrive.at(i).at(s) + p.heuristics.constructive.corridor.max_delay_over_fastest_route
                 ) {
