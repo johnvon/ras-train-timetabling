@@ -3,6 +3,7 @@
 
 #include <data/array.h>
 #include <data/data.h>
+#include <data/path.h>
 
 #include <utility>
 #include <vector>
@@ -12,11 +13,11 @@ struct grapher {
     /*! The problem data */
     const data& d;
     
-    /*! The solution, given in terms of x variables */
-    const uint_matrix_4d& x;
+    /*! The solution, given in terms of train paths */
+    const bv<path>& paths;
     
     /*! Basic constructor */
-    grapher(const data& d, const uint_matrix_4d& x) : d{d}, x{x} {}
+    grapher(const data& d, const bv<path>& paths) : d{d}, paths{paths} {}
     
     /*! Write data to file */
     auto write_graph() -> void;

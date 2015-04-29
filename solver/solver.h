@@ -3,6 +3,9 @@
 
 #include <data/array.h>
 #include <data/data.h>
+#include <data/path.h>
+
+#include <boost/optional.hpp>
 
 /*! This class models a MIP solver for the dispatching problem */
 struct solver {
@@ -36,8 +39,8 @@ struct solver {
     /*! Basic constructor */
     solver(data& d) : d{d}, t{times()} {};
     
-    /*! Solve the model! */
-    auto solve() -> void;
+    /*! Solve the model and returns the generated paths (if the problem is feasible) or boost::none */
+    auto solve() -> boost::optional<bv<path>>;
     
 private:
     
@@ -58,8 +61,11 @@ private:
     auto create_constraints_heavy(IloEnv& env, IloModel& model, var_matrix_4d& var_x) -> void;
     auto create_constraints_cant_stop(IloEnv& env, IloModel& model, var_matrix_2d& var_excess_travel_time) -> void;
     
-    auto print_results(double ub_at_root, double ub_at_end, double lb_at_root, double lb_at_end) -> void;
-    auto print_summary(IloEnv& env, IloCplex& cplex, var_matrix_4d& var_x, var_matrix_2d& var_excess_travel_time) -> void;
+    auto make_paths(IloEnv& env, IloCplex& cplex, var_matrix_4d& var_x) -> bv<path>;
+    
+    auto print_results(double ub_at_root, double ub_at_end, double lb_at_root, double lb_at_end) const -> void;
+    auto print_summary(const bv<path>& paths) const -> void;
+    auto print_graph(const bv<path>& paths) const -> void;
 };
 
 #endif

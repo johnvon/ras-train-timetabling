@@ -11,7 +11,7 @@
 #include <thread>
 #include <limits>
 
-auto solver::solve() -> void {
+auto solver::solve() -> boost::optional<bv<path>> {
     using namespace std::chrono;
     
     auto t_start = high_resolution_clock::time_point();
@@ -54,7 +54,7 @@ auto solver::solve() -> void {
         std::cerr << "bc_solver.cpp::solve() \t CPLEX ext status: " << cplex.getCplexStatus() << std::endl;
         
         cplex.exportModel("model_err.lp");
-        throw std::runtime_error("Some error occurred or the problem is infeasible");
+        return boost::none;
     }
     
     lb_at_root = cplex.getBestObjValue();
@@ -77,6 +77,7 @@ auto solver::solve() -> void {
     
     if(!success_at_later_node) {
         std::cout << "Cplex infeasible at later node: " << cplex.getStatus() << " - " << cplex.getCplexStatus() << std::endl;
+        return boost::none;
     } else {
         lb_at_end = cplex.getBestObjValue();
         
@@ -89,22 +90,23 @@ auto solver::solve() -> void {
         std::cout << "Cplex UB value: " << ub_at_end << std::endl;
     }
     
+    auto paths = make_paths(env, cplex, var_x);
+    
     print_results(ub_at_root, ub_at_end, lb_at_root, lb_at_end);
-    print_summary(env, cplex, var_x, var_excess_travel_time);
+    print_summary(paths);
+    print_graph(paths);
     
     env.end();
+    
+    return paths;
 }
 
-auto solver::print_summary(IloEnv& env, IloCplex& cplex, var_matrix_4d& var_x, var_matrix_2d& var_excess_travel_time) -> void {
+auto solver::make_paths(IloEnv& env, IloCplex& cplex, var_matrix_4d& var_x) -> bv<path> {
     auto x = uint_matrix_4d(d.nt, uint_matrix_3d(d.ns + 2, uint_matrix_2d(d.ni + 2, uint_vector(d.ns + 2, 0u))));
-    auto theta = uint_matrix_2d(d.nt, uint_vector(d.ns + 2, 0u));
-    
+    auto paths = bv<path>();
+
     for(auto i = 0u; i < d.nt; i++) {
         for(auto s1 = 0u; s1 <= d.ns + 1; s1++) {
-            if(s1 >= 1u && s1 <= d.ns) {
-                theta[i][s1] = cplex.getValue(var_excess_travel_time[i][s1]);
-            }
-            
             for(auto t = 0u; t <= d.ni + 1; t++) {
                 for(auto s2 = 0u; s2 <= d.ns + 1; s2++) {
                     if(d.gr.adj[i][s1][t][s2]) {
@@ -117,64 +119,27 @@ auto solver::print_summary(IloEnv& env, IloCplex& cplex, var_matrix_4d& var_x, v
                 }
             }
         }
-    }
-    
-    for(auto i = 0u; i < d.nt; i++) {
-        std::cout << "** Train: " << i << " **" << std::endl;
         
-        auto current_seg = 0u;
-        auto current_time = 0u;
-        auto current_entry_time = -1;
-    
-        while(current_seg != d.ns + 1) {
-            auto next_seg = -1;
-                        
-            if(current_time >= d.ni + 1) {
-                std::cerr << "Could not find a valid path!" << std::endl;
-                break;
-            }
-            
-            for(auto s : d.gr.delta[i][current_seg]) {
-                if(x[i][current_seg][current_time][s] > 0u) {
-                    next_seg = static_cast<long>(s);
-                }
-            }
-            
-            if(next_seg < 0 && current_time == d.ni) {
-                if(x[i][current_seg][d.ni][d.ns + 1] > 0u) {
-                    next_seg = static_cast<long>(d.ns + 1);
-                }
-            }
-                
-            if(next_seg >= 0) {
-                if(static_cast<unsigned int>(next_seg) != current_seg) {
-                    if(current_entry_time >= 0l) {
-                        std::cout << "\tLeaving at time: " << current_time << std::endl;
-                        std::cout << "\tRunning time: " << (current_time - current_entry_time + 1) << std::endl;
-                        std::cout << "\tMinimum running time: " << d.net.min_travel_time[i][current_seg] << std::endl;
-                    }
-                    
-                    if(next_seg != static_cast<long>(d.ns + 1)) {
-                        std::cout << "Segment " << next_seg << std::endl;
-                        std::cout << "\tEntering at time: " << current_time + 1 << std::endl;
-                    }
-                    
-                    current_entry_time = static_cast<long>(current_time + 1);
-                }
-                current_seg = next_seg;
-            }
-            
-            current_time++;
-        }
+        paths.push_back(path(d, i, x.at(i)));
     }
     
+    return paths;
+}
+
+auto solver::print_summary(const bv<path>& paths) const -> void {
+    for(const auto& p : paths) {
+        p.print_summary();
+    }
+}
+
+auto solver::print_graph(const bv<path>& paths) const -> void {
     #if USE_GRAPHER
-        auto ger = grapher(d, x);
+        auto ger = grapher(d, paths);
         ger.write_graph();
     #endif
 }
 
-auto solver::print_results(double ub_at_root, double ub_at_end, double lb_at_root, double lb_at_end) -> void {
+auto solver::print_results(double ub_at_root, double ub_at_end, double lb_at_root, double lb_at_end) const -> void {
     std::ofstream results_file;
     results_file.open(d.p.results_file, std::ios::out | std::ios::app);
     

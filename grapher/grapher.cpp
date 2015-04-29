@@ -15,13 +15,13 @@ auto grapher::generate_points() -> grapher::points_data {
             auto escaping = false;
             
             for(auto s : d.gr.delta[i][current_seg]) {
-                if(x.at(i).at(current_seg).at(current_time).at(s) > 0u) {
+                if(paths.at(i).x.at(current_seg).at(current_time).at(s) > 0u) {
                     next_seg = static_cast<long>(s);
                 }
             }
             
             if(next_seg < 0 && current_time == d.ni) {
-                if(x.at(i).at(current_seg).at(d.ni).at(d.ns + 1) > 0u) {
+                if(paths.at(i).x.at(current_seg).at(d.ni).at(d.ns + 1) > 0u) {
                     next_seg = static_cast<long>(d.ns + 1);
                     escaping = true;
                 }

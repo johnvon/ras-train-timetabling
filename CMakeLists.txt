@@ -84,6 +84,8 @@ else()
   find_package(Boost)
 endif()
 
+set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-isystem ")
+
 # INCLUDE DIRECTORIES
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 if(NEED_CPLEX)
@@ -105,6 +107,8 @@ set(SOURCE_FILES
     data/mows.cpp
     data/network.h
     data/network.cpp
+    data/path.h
+    data/path.cpp
     data/prices.h
     data/prices.cpp
     data/segments.h
