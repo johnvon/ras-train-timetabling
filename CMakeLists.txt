@@ -12,7 +12,7 @@ if(NEED_CPLEX)
              set(CPLEX_ROOT_DIR "/opt/ibm/ILOG/CPLEX_Studio126" CACHE FILEPATH "IBM Cplex install dir")
          endif()
          if(BUILDING_FOR_DBG_MACHINE)
-             set(CPLEX_ROOT_DIR "/home/alberto/cplex" CACHE FILEPATH "IBM Cplex install dir")
+             set(CPLEX_ROOT_DIR "~/cplex" CACHE FILEPATH "IBM Cplex install dir")
          endif()
     endif()
     
@@ -20,6 +20,8 @@ if(NEED_CPLEX)
     set(USE_CPLEX_SOURCE_FILES
       solver/solver.h
       solver/solver.cpp
+      solver/sequential_solver.h
+      solver/sequential_solver.cpp
     )
 else()
     set(USE_CPLEX_FLAG "false")
