@@ -36,6 +36,7 @@ auto solver::solve() -> boost::optional<bv<path>> {
     cplex.setParam(IloCplex::TiLim, d.p.cplex.time_limit);
     cplex.setParam(IloCplex::Threads, d.p.cplex.threads);
     cplex.setParam(IloCplex::NodeLim, 0);
+    cplex.setOut(env.getNullStream());
 
     t_start = high_resolution_clock::now();
     
@@ -76,7 +77,7 @@ auto solver::solve() -> boost::optional<bv<path>> {
     t.cplex_total = t.cplex_at_root + time_span.count();
     
     if(!success_at_later_node) {
-        std::cout << "Cplex infeasible at later node: " << cplex.getStatus() << " - " << cplex.getCplexStatus() << std::endl;
+        std::cerr << "Cplex infeasible at later node: " << cplex.getStatus() << " - " << cplex.getCplexStatus() << std::endl;
         return boost::none;
     } else {
         lb_at_end = cplex.getBestObjValue();
@@ -87,10 +88,10 @@ auto solver::solve() -> boost::optional<bv<path>> {
             ub_at_end = std::numeric_limits<double>::max();
         }
         
-        std::cout << "Cplex UB value: " << ub_at_end << std::endl;
+        std::cerr << "Cplex UB value: " << ub_at_end << std::endl;
     }
     
-    auto paths = make_paths(env, cplex, var_x);
+    auto paths = make_paths(env, cplex, var_x, var_excess_travel_time);
     
     print_results(ub_at_root, ub_at_end, lb_at_root, lb_at_end);
     print_summary(paths);
@@ -101,17 +102,22 @@ auto solver::solve() -> boost::optional<bv<path>> {
     return paths;
 }
 
-auto solver::make_paths(IloEnv& env, IloCplex& cplex, var_matrix_4d& var_x) -> bv<path> {
+auto solver::make_paths(IloEnv& env, IloCplex& cplex, var_matrix_4d& var_x, var_matrix_2d& var_excess_travel_time) -> bv<path> {
     auto x = uint_matrix_4d(d.nt, uint_matrix_3d(d.ns + 2, uint_matrix_2d(d.ni + 2, uint_vector(d.ns + 2, 0u))));
     auto paths = bv<path>();
 
     for(auto i = 0u; i < d.nt; i++) {
+        auto cost = 0.0;
+        
         for(auto s1 = 0u; s1 <= d.ns + 1; s1++) {
+            cost += d.pri.delay[d.trn.type[i]] * cplex.getValue(var_excess_travel_time[i][s1]);
+            
             for(auto t = 0u; t <= d.ni + 1; t++) {
                 for(auto s2 = 0u; s2 <= d.ns + 1; s2++) {
                     if(d.gr.adj[i][s1][t][s2]) {
                         if(cplex.getValue(var_x[i][s1][t][s2]) > 0.0) {
                             x[i][s1][t][s2] = 1u;
+                            cost += d.gr.costs[i][s1][t][s2] * cplex.getValue(var_x[i][s1][t][s2]);
                         }
                     } else {
                         x[i][s1][t][s2] = 0u;
@@ -120,7 +126,7 @@ auto solver::make_paths(IloEnv& env, IloCplex& cplex, var_matrix_4d& var_x) -> b
             }
         }
         
-        paths.push_back(path(d, i, x.at(i)));
+        paths.push_back(path(d, i, x.at(i), cost));
     }
     
     return paths;
@@ -128,7 +134,7 @@ auto solver::make_paths(IloEnv& env, IloCplex& cplex, var_matrix_4d& var_x) -> b
 
 auto solver::print_summary(const bv<path>& paths) const -> void {
     for(const auto& p : paths) {
-        p.print_summary();
+        p.print_summary(std::cerr);
     }
 }
 
@@ -157,7 +163,7 @@ auto solver::print_results(double ub_at_root, double ub_at_end, double lb_at_roo
     results_file.close();
 }
 
-auto solver::create_variables(IloEnv& env, var_matrix_4d& var_x, var_matrix_2d& var_excess_travel_time) -> void {
+auto solver::create_variables(IloEnv& env, IloModel& model, var_matrix_4d& var_x, var_matrix_2d& var_excess_travel_time) -> void {
     std::stringstream name;
     
     for(auto i = 0u; i < d.nt; i++) {        
@@ -169,6 +175,7 @@ auto solver::create_variables(IloEnv& env, var_matrix_4d& var_x, var_matrix_2d& 
             
             name.str(""); name << "var_excess_travel_time_" << i << "_" << s1;
             var_excess_travel_time[i][s1] = IloNumVar(env, 0, d.ni + 2, IloNumVar::Int, name.str().c_str());
+            model.add(var_excess_travel_time[i][s1]);
             
             for(auto t = 0u; t <= d.ni; t++) {
                 var_x[i][s1][t] = var_vector(env, d.ns + 2);
@@ -200,6 +207,11 @@ auto solver::create_constraints_exit_sigma(IloEnv& env, IloModel& model, var_mat
             }
         }
         
+        if(d.gr.adj[i][0][0][d.ns + 1]) {
+            // Dummy path!
+            expr += var_x[i][0][0][d.ns + 1];
+        }
+        
         cst_exit_sigma[i] = IloRange(env, 1, expr, 1, name.str().c_str());
         expr.end();
     }
@@ -227,6 +239,11 @@ auto solver::create_constraints_enter_tau(IloEnv& env, IloModel& model, var_matr
             if(d.gr.adj[i][s][d.ni][d.ns+1]) {
                 expr += var_x[i][s][d.ni][d.ns+1];
             }
+        }
+        
+        if(d.gr.adj[i][0][0][d.ns + 1]) {
+            // Dummy path!
+            expr += var_x[i][0][0][d.ns + 1];
         }
         
         cst_enter_tau[i] = IloRange(env, 1, expr, 1, name.str().c_str());
@@ -607,48 +624,48 @@ auto solver::create_model(IloEnv& env, IloModel& model, var_matrix_4d& var_x, va
     auto t_end = high_resolution_clock::time_point();
     auto time_span = duration<double>();
     
-    std::cout << "Creating variables" << std::endl;
+    std::cerr << "Creating variables" << std::endl;
     
     t_start = high_resolution_clock::now();
-    create_variables(env, var_x, var_excess_travel_time);
+    create_variables(env, model, var_x, var_excess_travel_time);
     t_end = high_resolution_clock::now();
 
     time_span = duration_cast<duration<double>>(t_end - t_start);
     t.variable_creation = time_span.count();
     
-    std::cout << "Creating constraints" << std::endl;
+    std::cerr << "Creating constraints" << std::endl;
     
     t_start = high_resolution_clock::now();
-    std::cout << "\tExit sigma" << std::endl;
+    std::cerr << "\tExit sigma" << std::endl;
     create_constraints_exit_sigma(env, model, var_x);
-    std::cout << "\tEnter tau" << std::endl;
+    std::cerr << "\tEnter tau" << std::endl;
     create_constraints_enter_tau(env, model, var_x);
-    std::cout << "\tFlow" << std::endl;
+    std::cerr << "\tFlow" << std::endl;
     create_constraints_flow(env, model, var_x);
-    std::cout << "\tMax one train" << std::endl;
+    std::cerr << "\tMax one train" << std::endl;
     create_constraints_max_one_train(env, model, var_x);
-    std::cout << "\tSet excess travel time" << std::endl;
+    std::cerr << "\tSet excess travel time" << std::endl;
     create_constraints_set_excess_travel_time(env, model, var_x, var_excess_travel_time);
-    std::cout << "\tMin travel time" << std::endl;
+    std::cerr << "\tMin travel time" << std::endl;
     create_constraints_min_travel_time(env, model, var_excess_travel_time);
-    std::cout << "\tHeadway 1" << std::endl;
+    std::cerr << "\tHeadway 1" << std::endl;
     create_constraints_headway_1(env, model, var_x);
-    std::cout << "\tHeadway 2" << std::endl;
+    std::cerr << "\tHeadway 2" << std::endl;
     create_constraints_headway_2(env, model, var_x);
-    std::cout << "\tHeadway 3" << std::endl;
+    std::cerr << "\tHeadway 3" << std::endl;
     create_constraints_headway_3(env, model, var_x);
-    std::cout << "\tSiding" << std::endl;
+    std::cerr << "\tSiding" << std::endl;
     create_constraints_siding(env, model, var_x);
-    std::cout << "\tHeavy" << std::endl;
+    std::cerr << "\tHeavy" << std::endl;
     create_constraints_heavy(env, model, var_x);
-    std::cout << "\tCan't stop" << std::endl;
+    std::cerr << "\tCan't stop" << std::endl;
     create_constraints_cant_stop(env, model, var_excess_travel_time);
     t_end = high_resolution_clock::now();
     
     time_span = duration_cast<duration<double>>(t_end - t_start);
     t.constraints_creation = time_span.count();
     
-    std::cout << "Creating objective function" << std::endl;
+    std::cerr << "Creating objective function" << std::endl;
     
     t_start = high_resolution_clock::now();
     create_objective_function(env, model, var_x, var_excess_travel_time);

@@ -45,7 +45,7 @@ struct solver {
 private:
     
     auto create_model(IloEnv& env, IloModel& model, var_matrix_4d& var_x, var_matrix_2d& var_travel_time) -> void;
-    auto create_variables(IloEnv& env, var_matrix_4d& var_x, var_matrix_2d& var_excess_travel_time) -> void;
+    auto create_variables(IloEnv& env, IloModel& model, var_matrix_4d& var_x, var_matrix_2d& var_excess_travel_time) -> void;
     auto create_objective_function(IloEnv& env, IloModel& model, var_matrix_4d& var_x, var_matrix_2d& var_excess_travel_time) -> void;
 
     auto create_constraints_exit_sigma(IloEnv& env, IloModel& model, var_matrix_4d& var_x) -> void;
@@ -61,7 +61,7 @@ private:
     auto create_constraints_heavy(IloEnv& env, IloModel& model, var_matrix_4d& var_x) -> void;
     auto create_constraints_cant_stop(IloEnv& env, IloModel& model, var_matrix_2d& var_excess_travel_time) -> void;
     
-    auto make_paths(IloEnv& env, IloCplex& cplex, var_matrix_4d& var_x) -> bv<path>;
+    auto make_paths(IloEnv& env, IloCplex& cplex, var_matrix_4d& var_x, var_matrix_2d& var_excess_travel_time) -> bv<path>;
     
     auto print_results(double ub_at_root, double ub_at_end, double lb_at_root, double lb_at_end) const -> void;
     auto print_summary(const bv<path>& paths) const -> void;
