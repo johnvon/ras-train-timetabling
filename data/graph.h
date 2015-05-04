@@ -60,6 +60,12 @@ struct graph {
     /*! Construct from data already read from the JSON data file */
     graph(unsigned int nt, unsigned int ns, unsigned int ni, const params& p, const trains& trn, const mows& mnt, const segments& seg, const network& net, const time_windows& tiw, const prices& pri);
     
+    /*! Only keep trains specified in the vector */
+    auto only_trains(const uint_vector& trains, unsigned int nt, unsigned int ns, unsigned int ni) -> void;
+    
+    /*! Cleans up unreachable nodes and unusable arcs */
+    auto cleanup(unsigned int nt, unsigned int ns, unsigned int ni) -> void;
+        
 private:
     
     auto calculate_deltas(unsigned int nt, unsigned int ns, const trains& trn, const segments& seg) -> void;
@@ -69,8 +75,9 @@ private:
     auto calculate_escape_arcs(unsigned int nt, unsigned int ns, unsigned int ni) -> void;
     auto calculate_stop_arcs(unsigned int nt, unsigned int ns, unsigned int ni, const network& net) -> void;
     auto calculate_movement_arcs(unsigned int nt, unsigned int ns, unsigned int ni, const network& net) -> void;
-    auto cleanup(unsigned int nt, unsigned int ns, unsigned int ni) -> void;
     auto calculate_costs(unsigned int nt, unsigned int ns, unsigned int ni, const trains& trn, const network& net, const time_windows& tiw, const prices& pri) -> void;
+    
+    auto clear_graph_for_train(unsigned int i, unsigned int ns, unsigned int ni) -> void;
 };
 
 #endif

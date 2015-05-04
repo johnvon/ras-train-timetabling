@@ -343,3 +343,29 @@ auto graph::calculate_costs(unsigned int nt, unsigned int ns, unsigned int ni, c
         }
     }
 }
+
+auto graph::only_trains(const uint_vector& trains, unsigned int nt, unsigned int ns, unsigned int ni) -> void {
+    assert(trains.size() <= nt);
+    
+    for(auto i = 0u; i < nt; i++) {
+        if(std::find(trains.begin(), trains.end(), i) == trains.end()) {
+            clear_graph_for_train(i, ns, ni);
+        }
+    }
+}
+
+auto graph::clear_graph_for_train(unsigned int i, unsigned int ns, unsigned int ni) -> void {
+    for(auto s1 = 0u; s1 <= ns + 1; s1++) {
+        for(auto t = 0u; t <= ni + 1; t++) {
+            for(auto s2 = 0u; s2 <= ns + 1; s2++) {
+                if(adj.at(i).at(s1).at(t).at(s2)) {
+                    adj.at(i).at(s1).at(t).at(s2) = false;
+                    n_arcs.at(i)--;
+                }
+            }
+            n_out.at(i).at(s1).at(t) = 0u;
+            n_in.at(i).at(s1).at(t) = 0u;
+            n_nodes.at(i)--;
+        }
+    }
+}
