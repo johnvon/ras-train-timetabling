@@ -7,6 +7,8 @@
 
 #include <boost/property_tree/ptree.hpp>
 
+#include <string>
+
 /*! \brief This class contains info about trains in the instance */
 struct trains {
     /*! Trains with TOB > than this are considered heavy */
@@ -80,6 +82,9 @@ struct trains {
     
     /*! Indexed over (tr,n) contains the list of segments corresponding to tr's n-th SA point */
     uint_matrix_3d sa_segs;
+    
+    /*! Train identification names */
+    bv<std::string> name;
     
     /*! Empty constructor */
     trains() {}

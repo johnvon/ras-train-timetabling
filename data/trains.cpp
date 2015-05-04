@@ -12,6 +12,7 @@ constexpr char trains::first_train_class;
 constexpr char trains::last_train_class;
 
 trains::trains(const ptree& pt, unsigned int nt, unsigned int ns, unsigned int ni, const speeds& spd, const segments& seg) {
+    unsigned int train_n = 0u;
     BOOST_FOREACH(const ptree::value_type& train_child, pt.get_child("trains")) {
         want_time.push_back(train_child.second.get<unsigned int>("terminal_wt"));
         entry_time.push_back(train_child.second.get<unsigned int>("entry_time"));
@@ -52,6 +53,8 @@ trains::trains(const ptree& pt, unsigned int nt, unsigned int ns, unsigned int n
         
         // sa_segs empty for now
         sa_segs.push_back(uint_matrix_2d(sa_num.back(), uint_vector()));
+        
+        name.push_back("Train " + std::to_string(train_n++));
         
         assert(want_time.back() < ni);
         assert(entry_time.back() < ni);
