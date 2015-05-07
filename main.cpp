@@ -15,7 +15,10 @@ int main(int argc, char* argv[]) {
     #if USE_CPLEX
         auto s = sequential_solver(d);
         s.solve_sequentially();
-    #endif
+    #else
+        auto s = sequential_solver_heuristic(d);
+        s.solve_sequentially();
+	#endif
 
     return 0;
 }

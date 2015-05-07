@@ -8,7 +8,7 @@
 
 /*! \brief This class describes the path of a train in the network */
 struct path {
-    /*! This class simply repreesnts a segment at a certain time interval */
+    /*! This class simply represents a segment at a certain time interval */
     struct node {
         /*! The segment's id */
         unsigned int seg;
