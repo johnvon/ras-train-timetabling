@@ -13,7 +13,7 @@ struct sequential_solver {
     const data& d;
     
     /*! Schedule the trains one by one */
-    auto solve_sequentially() -> boost::optional<bv<path>>;
+    virtual auto solve_sequentially() -> boost::optional<bv<path>>;
     
     /*! Remove all arcs incompatible with the paths */
     auto constrain_graph_by_paths(graph& gr, const bv<path>& paths) -> void;

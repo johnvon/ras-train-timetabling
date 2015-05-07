@@ -10,7 +10,7 @@
 
 #include "sequential_solver.h"
 
-struct sequential_solver_heuristic: public sequential_solver {
+struct sequential_solver_heuristic: virtual public sequential_solver {
 public:
 	/*! Schedule the trains one by one heuristically */
 	    auto solve_sequentially() -> boost::optional<bv<path>>;
