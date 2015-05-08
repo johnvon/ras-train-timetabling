@@ -31,3 +31,5 @@ ras
 *.lp
 results.txt
 *.png
+/class diagram.jpeg
+/UML.xmi
