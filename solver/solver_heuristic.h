@@ -14,9 +14,10 @@
 #include <boost/optional.hpp>
 struct solver_heuristic {
 public:
+	data& d;
+	auto train;
 	auto solve() -> boost::optional<bv<path>>;
-	solver_heuristic();
-	virtual ~solver_heuristic();
+	solver_heuristic(data& d, auto train): d{d}, train{train};
 };
 
 #endif /* SOLVER_SOLVER_HEURISTIC_H_ */

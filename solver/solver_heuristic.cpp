@@ -9,15 +9,14 @@
 
 auto solve(){
 
+	path p = path(d, train);
+	graph * gr = &d.gr;
+	trains * trn = &d.trn;
+	auto sigma = trn->orig_ext[train];
+	auto tau = trn->dest_ext[train];
+
 
 }
 
-solver_heuristic::solver_heuristic() {
-	// TODO Auto-generated constructor stub
 
-}
-
-solver_heuristic::~solver_heuristic() {
-	// TODO Auto-generated destructor stub
-}
 
