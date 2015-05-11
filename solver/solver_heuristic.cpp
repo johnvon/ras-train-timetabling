@@ -7,6 +7,8 @@
 
 #include "solver_heuristic.h"
 
+using uint_pair = std::pair<unsigned int, unsigned int>;
+
 auto solve(){
 
 	//path p = path(d, train);
@@ -19,19 +21,25 @@ auto solve(){
 
 }
 
-auto dijkstra_time_expanded(graph * gr, trains * trn, auto start, auto src, auto dst) {
+auto dijkstra_time_expanded(graph * gr, trains * trn, auto start, auto src_segment, auto dst_segment) {
 	unsigned int inf = 0xFFFFFFFF - 1;
-	uint_vector dist = uint_vector(gr->n_nodes[train], inf);
-	uint_vector previous = uint_vect(gr->n_nodes[train], scr);
+	bv<bv<uint_pair>> previous = bv(gr->v[train].size(), bv(gr->v[train][start].size(), std::make_pair(src_segment, start)));
 
-	dist[scr] = 0;
+	std::set<uint_pair> S;
+	S.insert(std::make_pair(src_segment, start));
 
-	for (const auto& next : gr->delta[train][src]) {
-		dist[next] = gr->costs[train][src][start][next];
-	}
-
-	std::set<unsigned int> S;
-	while (true) {
+	unsigned int now = start;
+	bool dst_found = false;
+	while (!dst_found) {
+		for(const uint_pair& explored : S){
+			for (const unsigned int& connected : gr->delta[train][explored.first]){
+				if(gr->adj[train][explored.first][explored.second][connected] && S.find(std::make_pair(connected, explored.second+1)!=S.end())
+				if(S.find(connected)==S.end()){
+					S.insert(connected);
+					previous[connected]=explored;
+				}
+			}
+		}
 
 	}
 }

@@ -21,7 +21,7 @@ public:
 	solver_heuristic(data& d, auto train): d{d}, train{train} {};
 
 private:
-	auto dijkstra_time_expanded(graph * gr, trains * trn, auto start, auto src, auto dst);
+	auto dijkstra_time_expanded(graph * gr, trains * trn, auto start, auto src_segment, auto dst_segment);
 };
 
 #endif /* SOLVER_SOLVER_HEURISTIC_H_ */
