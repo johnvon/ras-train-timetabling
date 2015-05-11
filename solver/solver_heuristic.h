@@ -10,6 +10,7 @@
 #include <data/array.h>
 #include <data/data.h>
 #include <data/path.h>
+#include <set>
 
 #include <boost/optional.hpp>
 struct solver_heuristic {
@@ -17,7 +18,10 @@ public:
 	data& d;
 	auto train;
 	auto solve() -> boost::optional<bv<path>>;
-	solver_heuristic(data& d, auto train): d{d}, train{train};
+	solver_heuristic(data& d, auto train): d{d}, train{train} {};
+
+private:
+	auto dijkstra_time_expanded(graph * gr, trains * trn, auto start, auto src, auto dst);
 };
 
 #endif /* SOLVER_SOLVER_HEURISTIC_H_ */
