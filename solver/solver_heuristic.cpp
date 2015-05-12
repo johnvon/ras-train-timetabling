@@ -6,8 +6,7 @@
  */
 
 #include <solver/solver_heuristic.h>
-
-using uint_pair = std::pair<unsigned int, unsigned int>;
+#include <data/path.h>
 
 auto solve()-> boost::optional<bv<path>>{
 	graph * gr = &d.gr;
@@ -21,22 +20,23 @@ auto solve()-> boost::optional<bv<path>>{
 
 auto dijkstra_time_expanded(graph * gr, trains * trn, auto start, auto src_segment, auto dst_segment) {
 	unsigned int inf = 0xFFFFFFFF - 1;
-	bv<bv<uint_pair>> previous = bv(gr->v[train].size(), bv(gr->v[train][src_segment].size(), std::make_pair(src_segment, start)));
 
-	std::set<uint_pair> S;
-	S.insert(std::make_pair(src_segment, start));
+	bv<bv<node>> previous = bv(gr->v[train].size(), bv(gr->v[train][src_segment].size(), node(src_segment, start)));
+
+	std::set<node> S;
+	S.insert(node(src_segment, start));
 
 	unsigned int end;
 	bool dst_found = false;
 
 	while (!dst_found) {
-		for(const uint_pair& explored : S){
-			for (const unsigned int& connected : gr->delta[train][explored.first]){
-				if(gr->adj[train][explored.first][explored.second][connected] && S.find(std::make_pair(connected, explored.second+1))!=S.end()){
-					previous[connected][explored.second+1]=explored;
-					S.insert(std::make_pair(connected, explored.second+1));
+		for(const node& explored : S){
+			for (const unsigned int& connected : gr->delta[train][explored.seg]){
+				if(gr->adj[train][explored.seg][explored.t][connected] && S.find(node(connected, explored.t+1))!=S.end()){
+					previous[connected][explored.t+1]=explored;
+					S.insert(node(connected, explored.t+1));
 					if(connected==dst_segment){
-						end=explored.second+1;
+						end=explored.t+1;
 						dst_found=true;
 						break;
 					}
@@ -47,7 +47,23 @@ auto dijkstra_time_expanded(graph * gr, trains * trn, auto start, auto src_segme
 		}
 
 	}
-	path p =
+	bv<node> shortest;
+	node actual = node(dst_segment,end);
+	unsigned int next_seg;
+	double cost = 0;
+
+	while (actual == node(src_segment,start)) {
+		next_seg = actual.seg;
+		actual = previous[actual.seg][actual.t];
+		cost += gr->costs[train][actual.seg][actual.t][next_seg];
+		shortest.push_back(actual);
+	}
+	shortest.erase(shortest.begin()+shortest.size()-1);
+	cost -= gr->costs[train][src_segment][start][next_seg];
+
+	shortest=std::reverse(shortest.begin(), shortest.end());
+
+	return path(d, train, shortest, cost);
 
 }
 
