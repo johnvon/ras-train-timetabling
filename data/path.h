@@ -41,6 +41,9 @@ struct path {
     /*! Makes a dummy path for the train - It goes from sigma to tau and costs nothing */
     path(const data& d, unsigned int train);
     
+    /*! Construct the path given the sequence of nodes and its cost*/
+    path(const data& d, unsigned int train, bv<node> p, double cost);
+
     /*! Marks the path as dummy */
     auto make_dummy() -> void;
     

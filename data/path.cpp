@@ -54,6 +54,9 @@ path::path(const data& d, unsigned int train) : d{&d}, train{train}, cost{0.0} {
     make_dummy();
 }
 
+path::path(const data& d, unsigned int train, bv<node> p, double cost) : d{&d}, train{train}, cost{cost}, p{p}{
+
+}
 auto path::make_dummy() -> void {
     x = uint_matrix_3d(d->ns + 2, uint_matrix_2d(d->ni + 2, uint_vector(d->ns + 2, 0u)));
     x.at(0).at(0).at(d->ns + 1) = 1u;
