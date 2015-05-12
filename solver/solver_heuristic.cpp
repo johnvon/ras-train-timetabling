@@ -14,11 +14,11 @@ auto solve()-> boost::optional<bv<path>>{
 	auto sigma = trn->orig_ext[train];
 	auto tau = trn->dest_ext[train];
 
-	return dijkstra_time_expanded(gr, trn, trn->entry_time, src, dst);
+	return dijkstra_extra_greedy(gr, trn, trn->entry_time, src, dst);
 
 }
 
-auto dijkstra_time_expanded(graph * gr, trains * trn, auto start, auto src_segment, auto dst_segment) {
+auto dijkstra_extra_greedy(graph * gr, trains * trn, auto start, auto src_segment, auto dst_segment) {
 	unsigned int inf = 0xFFFFFFFF - 1;
 
 	bv<bv<node>> previous = bv(gr->v[train].size(), bv(gr->v[train][src_segment].size(), node(src_segment, start)));
@@ -28,11 +28,14 @@ auto dijkstra_time_expanded(graph * gr, trains * trn, auto start, auto src_segme
 
 	unsigned int end;
 	bool dst_found = false;
+	bool broken = false;
 
-	while (!dst_found) {
+	while (!dst_found || !broken) {
+		broken = true;
 		for(const node& explored : S){
 			for (const unsigned int& connected : gr->delta[train][explored.seg]){
 				if(gr->adj[train][explored.seg][explored.t][connected] && S.find(node(connected, explored.t+1))!=S.end()){
+					broken = false;
 					previous[connected][explored.t+1]=explored;
 					S.insert(node(connected, explored.t+1));
 					if(connected==dst_segment){
@@ -48,22 +51,23 @@ auto dijkstra_time_expanded(graph * gr, trains * trn, auto start, auto src_segme
 
 	}
 	bv<node> shortest;
-	node actual = node(dst_segment,end);
-	unsigned int next_seg;
-	double cost = 0;
+	if(!broken){
+		node actual = node(dst_segment,end);
+		unsigned int next_seg;
+		double cost = 0;
 
-	while (actual == node(src_segment,start)) {
-		next_seg = actual.seg;
-		actual = previous[actual.seg][actual.t];
-		cost += gr->costs[train][actual.seg][actual.t][next_seg];
-		shortest.push_back(actual);
+		while (actual == node(src_segment,start)) {
+			next_seg = actual.seg;
+			actual = previous[actual.seg][actual.t];
+			cost += gr->costs[train][actual.seg][actual.t][next_seg];
+			shortest.push_back(actual);
+		}
+		shortest.erase(shortest.begin()+shortest.size()-1);
+		cost -= gr->costs[train][src_segment][start][next_seg];
+
+		shortest=std::reverse(shortest.begin(), shortest.end());
+
 	}
-	shortest.erase(shortest.begin()+shortest.size()-1);
-	cost -= gr->costs[train][src_segment][start][next_seg];
-
-	shortest=std::reverse(shortest.begin(), shortest.end());
-
-	return path(d, train, shortest, cost);
-
+	return shortest;	//restituisce il percorso come vettore di nodi, vuoto se non siamo riusciti a schedularlo
 }
 
