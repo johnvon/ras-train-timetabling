@@ -5,18 +5,17 @@
  *      Author: giacomo
  */
 
-#include "solver_heuristic.h"
+#include <solver/solver_heuristic.h>
 
 using uint_pair = std::pair<unsigned int, unsigned int>;
 
-auto solve(){
-
+auto solve()-> boost::optional<bv<path>>{
 	graph * gr = &d.gr;
 	trains * trn = &d.trn;
 	auto sigma = trn->orig_ext[train];
 	auto tau = trn->dest_ext[train];
 
-	return dijkstra_time_expanded(gr, trn, src, dst);
+	return dijkstra_time_expanded(gr, trn, trn->entry_time, src, dst);
 
 }
 
