@@ -15,6 +15,8 @@
 
 #include <boost/optional.hpp>
 
+using node = path::node;
+
 struct solver_heuristic {
 public:
 	data& d;
