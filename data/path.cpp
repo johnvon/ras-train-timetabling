@@ -55,6 +55,8 @@ path::path(const data& d, unsigned int train) : d{&d}, train{train}, cost{0.0} {
 }
 
 path::path(const data& d, unsigned int train, bv<node> p, double cost) : d{&d}, train{train}, cost{cost}, p{p}{
+	if (p.empty())
+		make_dummy();
 
 }
 auto path::make_dummy() -> void {
