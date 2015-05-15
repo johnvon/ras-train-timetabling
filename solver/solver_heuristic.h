@@ -26,7 +26,8 @@ public:
 	solver_heuristic(data& d, auto train): d{d}, train{train} {}
 
 private:
-	auto dijkstra_extra_greedy(graph * gr, trains * trn, auto start, auto src_segments, auto dst_segments) -> bv<path>;
+	auto dijkstra_extra_greedy(graph * gr, trains * trn, auto start, auto src_segments, auto dst_segments) -> bv<node>;
+	auto simple_single_scheduler(graph * gr, trains * trn, auto start, auto src_segments, auto dst_segments) -> bv<node>;
 };
 
 #endif /* SOLVER_SOLVER_HEURISTIC_H_ */

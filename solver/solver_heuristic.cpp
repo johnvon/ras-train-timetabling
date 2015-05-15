@@ -63,7 +63,7 @@ auto solver_heuristic::solve()-> path{
 
 }
 
-auto solver_heuristic::dijkstra_extra_greedy(graph * gr, trains * trn, auto start, auto src_segment, auto dst_segment)-> bv<path> {
+auto solver_heuristic::dijkstra_extra_greedy(graph * gr, trains * trn, auto start, auto src_segment, auto dst_segment)-> bv<node> {
 	bv<bv<node>> previous = bv(gr->v[train].size(), bv(gr->v[train][src_segment].size(), node(src_segment, start)));
 
 	std::set<node> S;
@@ -112,5 +112,55 @@ auto solver_heuristic::dijkstra_extra_greedy(graph * gr, trains * trn, auto star
 
 	}
 	return shortest;	//restituisce il percorso come vettore di nodi, vuoto se non siamo riusciti a schedularlo
+}
+
+auto solver_heuristic::simple_single_scheduler(graph * gr, trains * trn, auto start, auto src_segments, auto dst_segments) -> bv<node>{
+	auto segs = trn->orig_segs[train];
+	auto now = trn->entry_time[train];
+	bv<node> seq;
+	seq.push_back(node(0,now));
+	std::pair<unsigned int, unsigned int> best = std::make_pair(0,5);;
+	for(const unsigned int& s : segs){
+		if(d.seg.type[s]>='0' || d.seg.type[s]<='2'){
+			if(!d.net.unpreferred[train][s]){
+				best = std::make_pair(s,0);
+				break;
+			}
+			else{
+				if(best.second>1)
+					best = std::make_pair(s,1);
+			}
+		}
+		else{
+			if(d.seg.type[s]=='S'){
+				if(best.second>2)
+					best = std::make_pair(s,2);
+			}
+		}
+	}
+	assert(best.second<3);
+	bool mowing = false;
+	unsigned int t = now;
+	unsigned int mow_time=0;
+	for(const auto& m : d.mnt.is_mow[best.first]){
+		while(!mowing || t<=now+d.net.min_travel_time[train][best.first]){
+			if(m[t]){
+				mowing = true;
+				mow_time++;
+			}
+			else{
+				if(mowing==true){
+					mowing = false;
+				}
+			}
+			t++;
+		}
+
+	}
+	seq.push_back(node(best.first,now));
+	bool finished = false;
+	while(!finished){
+
+	}
 }
 
