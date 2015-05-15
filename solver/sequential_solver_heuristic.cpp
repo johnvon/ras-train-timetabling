@@ -7,7 +7,7 @@
 
 #include "sequential_solver_heuristic.h"
 
-auto solve_sequentially() -> boost::optional<bv<path>> {
+auto sequential_solver_heuristic::solve_sequentially() -> boost::optional<bv<path>> {
 	auto trains_to_schedule = uint_vector(); //
 	auto paths = bv<path>(); //Crea un vettore di path
 
@@ -31,7 +31,7 @@ auto solve_sequentially() -> boost::optional<bv<path>> {
 		auto p_sol = s.solve();
 
 		if(p_sol) { //stampa le soluzioni finora
-			paths = *p_sol;
+			paths[i] = p_sol;
 			std::cout << "SEQUENTIAL_SOLVER >> Paths: "<< std::endl;
 			for(const auto& p : paths) {
 				if(!p.is_dummy()) {
