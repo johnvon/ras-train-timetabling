@@ -7,6 +7,10 @@
 
 #include <solver/solver_heuristic.h>
 #include <data/path.h>
+#include <assert.h>
+
+
+//TODO: SUBSTITUTE SQUARE BRACKETS WITH .at(i)
 
 auto solver_heuristic::solve()-> path{
 	graph * gr = &d.gr;
@@ -23,8 +27,8 @@ auto solver_heuristic::solve()-> path{
 	unsigned int now = trn->entry_time[train];
 
 	//The path is built concatenating the partial paths that connect the nodes to be visited
+#ifdef SIMPLE_DIJKSTRA
 	bv<node> node_seq;
-
 	for(auto i=0u; i<trn->sa_num+1; i++){
 
 		/* We are given a junction to be visited.
@@ -60,6 +64,9 @@ auto solver_heuristic::solve()-> path{
 	}
 
 	return path(d, train, node_seq, node_seq.size());
+#endif
+
+	return path(d, train, simple_single_scheduler(), 0);
 
 }
 
@@ -114,14 +121,15 @@ auto solver_heuristic::dijkstra_extra_greedy(graph * gr, trains * trn, auto star
 	return shortest;	//restituisce il percorso come vettore di nodi, vuoto se non siamo riusciti a schedularlo
 }
 
-auto solver_heuristic::simple_single_scheduler(graph * gr, trains * trn, auto start, auto src_segments, auto dst_segments) -> bv<node>{
-	auto segs = trn->orig_segs[train];
-	auto now = trn->entry_time[train];
+auto solver_heuristic::simple_single_scheduler() -> bv<node>{
+	auto segs = d.trn.orig_segs[train];
+	auto now = d.trn.entry_time[train];
 	bv<node> seq;
-	seq.push_back(node(0,now));
+	unsigned int here = 0;
+	seq.push_back(node(here,now));
 	std::pair<unsigned int, unsigned int> best = std::make_pair(0,5);;
 	for(const unsigned int& s : segs){
-		if(d.seg.type[s]>='0' || d.seg.type[s]<='2'){
+		if(d.seg.type[s]>='0' && d.seg.type[s]<='2'){
 			if(!d.net.unpreferred[train][s]){
 				best = std::make_pair(s,0);
 				break;
@@ -139,24 +147,68 @@ auto solver_heuristic::simple_single_scheduler(graph * gr, trains * trn, auto st
 		}
 	}
 	assert(best.second<3);
-	unsigned int t = segment_time(best.first, now); //Da qui
-	seq.push_back(node(best.first,now));
-	bool finished = false;
-	while(!finished){
 
+	wait_and_travel(here, best.first, now, seq);
+	bool finished = false;
+	unsigned int next;
+	while(!finished){
+		next = choose_next(here, now);
+		wait_and_travel(here, next, now, seq);
+		for(const unsigned int& s : d.trn.dest_segs[train]) {
+			finished = (next==s) || finished;
+		}
+	}
+
+	return seq;
+}
+
+auto solver_heuristic::wait_and_travel(unsigned int here, unsigned int next, unsigned int now, bv<node> &seq) -> void{
+	static unsigned int t = mow_wait_time(next, now++); //Da qui
+	while(now < now+t && !finished){
+		seq.push_back(node(here,now++));
+	}
+	while(now < now+d.net.min_travel_time[train][next]) {
+		seq.push_back(node(next,now++));
 	}
 }
-auto solver_heuristic::segment_time(auto seg, auto now) -> unsigned int{
-	unsigned int t = now;
-	while(t<=now+d.net.min_travel_time[train][seg]){
+
+auto solver_heuristic::mow_wait_time(unsigned int seg, unsigned int now) -> unsigned int{
+	unsigned int
+			t = now,
+			mow_time=now;
+	bool mowing = false;
+	while(t<=now+d.net.min_travel_time[train][seg] || mowing){
+		mowing = false;
 		if(d.mnt.is_mow[seg][t]){
-			while(d.mnt.is_mow[seg][t]){
-				t++;
-			}
-			break;
+			mow_time = t+1;
+			mowing = true;
 		}
 		t++;
 	}
-	return t;
+	return mow_time-now;
+}
+
+auto inline solver_heuristic::choose_next(unsigned int here, unsigned int now) -> unsigned int{
+	std::pair<unsigned int, unsigned int> best = std::make_pair(0,5);;
+		for(const unsigned int& s : d.gr.bar_delta.at(train)){
+			if(d.seg.type.at(s)>='0' && d.seg.type.at(s)<='2'){
+				if(!d.net.unpreferred.at(train).at(s)){
+					best = std::make_pair(s,0);
+					break;
+				}
+				else if(best.second>3) {
+					best = std::make_pair(s,3);
+				}
+			}
+			else if(d.seg.type.at(s)=='S' && best.second > 1) {
+				best = std::make_pair(s,1);
+			}
+			else if(d.seg.type.at(s)=='X' && best.second > 2){
+				best = std::make_pair(s,2);
+			}
+		}
+		assert(best.second<3);
+
+		return best.first;
 }
 
