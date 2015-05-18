@@ -28,6 +28,7 @@ public:
 private:
 	auto dijkstra_extra_greedy(graph * gr, trains * trn, auto start, auto src_segments, auto dst_segments) -> bv<node>;
 	auto simple_single_scheduler(graph * gr, trains * trn, auto start, auto src_segments, auto dst_segments) -> bv<node>;
+	auto segment_time(auto seg, auto now) -> unsigned int;
 };
 
 #endif /* SOLVER_SOLVER_HEURISTIC_H_ */

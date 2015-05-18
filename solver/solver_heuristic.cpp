@@ -139,28 +139,24 @@ auto solver_heuristic::simple_single_scheduler(graph * gr, trains * trn, auto st
 		}
 	}
 	assert(best.second<3);
-	bool mowing = false;
-	unsigned int t = now;
-	unsigned int mow_time=0;
-	for(const auto& m : d.mnt.is_mow[best.first]){
-		while(!mowing || t<=now+d.net.min_travel_time[train][best.first]){
-			if(m[t]){
-				mowing = true;
-				mow_time++;
-			}
-			else{
-				if(mowing==true){
-					mowing = false;
-				}
-			}
-			t++;
-		}
-
-	}
+	unsigned int t = segment_time(best.first, now); //Da qui
 	seq.push_back(node(best.first,now));
 	bool finished = false;
 	while(!finished){
 
 	}
+}
+auto solver_heuristic::segment_time(auto seg, auto now) -> unsigned int{
+	unsigned int t = now;
+	while(t<=now+d.net.min_travel_time[train][seg]){
+		if(d.mnt.is_mow[seg][t]){
+			while(d.mnt.is_mow[seg][t]){
+				t++;
+			}
+			break;
+		}
+		t++;
+	}
+	return t;
 }
 
