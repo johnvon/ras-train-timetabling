@@ -148,12 +148,13 @@ auto solver_heuristic::simple_single_scheduler() -> bv<node>{
 	}
 	assert(best.second<3);
 
-	wait_and_travel(here, best.first, now, seq);
 	bool finished = false;
+
+	wait_and_travel(here, best.first, now, seq, finished);
 	unsigned int next;
 	while(!finished){
 		next = choose_next(here, now);
-		wait_and_travel(here, next, now, seq);
+		wait_and_travel(here, next, now, seq, finished);
 		for(const unsigned int& s : d.trn.dest_segs[train]) {
 			finished = (next==s) || finished;
 		}
@@ -162,13 +163,15 @@ auto solver_heuristic::simple_single_scheduler() -> bv<node>{
 	return seq;
 }
 
-auto solver_heuristic::wait_and_travel(unsigned int here, unsigned int next, unsigned int now, bv<node> &seq) -> void{
+auto solver_heuristic::wait_and_travel(unsigned int here, unsigned int next, unsigned int now, bv<node> &seq, bool &finished) -> void{
 	static unsigned int t = mow_wait_time(next, now++); //Da qui
 	while(now < now+t && !finished){
 		seq.push_back(node(here,now++));
+		finished = (now > d.ni) || finished;
 	}
-	while(now < now+d.net.min_travel_time[train][next]) {
+	while(now < now+d.net.min_travel_time[train][next] && !finished) {
 		seq.push_back(node(next,now++));
+		finished = (now > d.ni) || finished;
 	}
 }
 

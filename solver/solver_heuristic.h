@@ -29,7 +29,7 @@ private:
 	auto dijkstra_extra_greedy(graph * gr, trains * trn, auto start, auto src_segments, auto dst_segments) -> bv<node>;
 	auto simple_single_scheduler() -> bv<node>;
 	auto mow_wait_time(unsigned int seg, unsigned int now) -> unsigned int;
-	auto wait_and_travel(unsigned int here, unsigned int next, unsigned int now, bv<node> &seq)->void;
+	auto wait_and_travel(unsigned int here, unsigned int next, unsigned int now, bv<node> &seq, bool &finished)->void;
 	auto inline choose_next(unsigned int here, unsigned int now) -> unsigned int;
 };
 
