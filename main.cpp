@@ -4,6 +4,9 @@
 #if USE_CPLEX
     #include <solver/solver.h>
     #include <solver/sequential_solver.h>
+#else
+	#include <solver/solver_heuristic.h>
+	#include <solver/sequential_solver_heuristic.h>
 #endif
 
 #include <iostream>
