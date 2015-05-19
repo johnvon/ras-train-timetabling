@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
         auto s = sequential_solver(d);
         s.solve_sequentially();
     #else
-        auto s = sequential_solver_heuristic(d);
+        sequential_solver_heuristic s = sequential_solver_heuristic(d);
         s.solve_sequentially();
 	#endif
 

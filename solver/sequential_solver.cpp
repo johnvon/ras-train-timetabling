@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-auto sequential_solver::solve_sequentially() -> boost::optional<bv<path>> {
+virtual auto sequential_solver::solve_sequentially() -> boost::optional<bv<path>> {
     auto trains_to_schedule = uint_vector();
     auto paths = bv<path>();
     

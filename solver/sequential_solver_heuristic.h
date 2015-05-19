@@ -8,10 +8,10 @@
 #ifndef SOLVER_SEQUENTIAL_SOLVER_HEURISTIC_H_
 #define SOLVER_SEQUENTIAL_SOLVER_HEURISTIC_H_
 
-#include "sequential_solver.h"
-
-struct sequential_solver_heuristic: virtual public sequential_solver {
+struct sequential_solver_heuristic{
 public:
+	data& d;
+	sequential_solver_heuristic(data& d): d{d} {}
 	/*! Schedule the trains one by one heuristically */
 	    auto solve_sequentially() -> boost::optional<bv<path>>;
 };

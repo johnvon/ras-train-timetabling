@@ -54,7 +54,7 @@ path::path(const data& d, unsigned int train) : d{&d}, train{train}, cost{0.0} {
     make_dummy();
 }
 
-path::path(const data& d, unsigned int train, bv<node> p, double cost) : d{&d}, train{train}, cost{cost}, p{p}{
+path::path(const data& d, unsigned int train, bv<node> p, double cost) : d{&d}, train{train}, p{p}, cost{cost}{
 	if (p.empty()){
 		make_dummy();
 		std::cout << "The train " <<  d.trn.name.at(train) << " could not be scheduled" << std::endl;
