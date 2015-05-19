@@ -12,6 +12,7 @@
 #include <data/data.h>
 #include <data/path.h>
 #include <set>
+#include <iostream>
 
 #include <boost/optional.hpp>
 
@@ -23,7 +24,7 @@ public:
 	unsigned int train;
 
 	auto solve() -> path;
-	solver_heuristic(data& d, auto train): d{d}, train{train} {}
+	solver_heuristic(data& d, unsigned int train): d{d}, train{train} {}
 
 private:
 	auto dijkstra_extra_greedy(graph * gr, trains * trn, auto start, auto src_segments, auto dst_segments) -> bv<node>;

@@ -7,6 +7,7 @@
 
 #ifndef SOLVER_SEQUENTIAL_SOLVER_HEURISTIC_H_
 #define SOLVER_SEQUENTIAL_SOLVER_HEURISTIC_H_
+#include <solver/solver_heuristic.h>
 
 struct sequential_solver_heuristic{
 public:

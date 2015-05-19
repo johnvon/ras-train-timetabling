@@ -18,40 +18,9 @@
 auto sequential_solver_heuristic::solve_sequentially() -> boost::optional<bv<path>> {
 
 	bv<path> paths;
-	auto s = solver(d,0); //crea e invoca il solver
+	auto s = solver_heuristic(d,0); //crea e invoca il solver
 	auto p_sol = s.solve();
 
 	paths.push_back(p_sol);
 	return paths;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }

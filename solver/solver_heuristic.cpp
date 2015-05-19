@@ -13,6 +13,8 @@
 //TODO: SUBSTITUTE SQUARE BRACKETS WITH .at(i)
 
 auto solver_heuristic::solve()-> path{
+#ifdef SIMPLE_DIJKSTRA
+
 	graph * gr = &d.gr;
 	trains * trn = &d.trn;
 
@@ -27,7 +29,6 @@ auto solver_heuristic::solve()-> path{
 	unsigned int now = trn->entry_time[train];
 
 	//The path is built concatenating the partial paths that connect the nodes to be visited
-#ifdef SIMPLE_DIJKSTRA
 	bv<node> node_seq;
 	for(auto i=0u; i<trn->sa_num+1; i++){
 
@@ -71,7 +72,7 @@ auto solver_heuristic::solve()-> path{
 }
 
 auto solver_heuristic::dijkstra_extra_greedy(graph * gr, trains * trn, auto start, auto src_segment, auto dst_segment)-> bv<node> {
-	bv<bv<node>> previous = bv(gr->v[train].size(), bv(gr->v[train][src_segment].size(), node(src_segment, start)));
+	bv<bv<node>> previous (gr->v[train].size(), bv<node>(gr->v[train][src_segment].size(),node(src_segment, start)));
 
 	std::set<node> S;
 	S.insert(node(src_segment, start));
@@ -106,7 +107,7 @@ auto solver_heuristic::dijkstra_extra_greedy(graph * gr, trains * trn, auto star
 		unsigned int next_seg;
 		double cost = 0;
 
-		while (actual == node(src_segment,start)) {
+		while (actual.seg == src_segment && actual.t==start) {
 			next_seg = actual.seg;
 			actual = previous[actual.seg][actual.t];
 			cost += gr->costs[train][actual.seg][actual.t][next_seg];
@@ -164,12 +165,15 @@ auto solver_heuristic::simple_single_scheduler() -> bv<node>{
 }
 
 auto solver_heuristic::wait_and_travel(unsigned int here, unsigned int next, unsigned int now, bv<node> &seq, bool &finished) -> void{
-	static unsigned int t = mow_wait_time(next, now++); //Da qui
-	while(now < now+t && !finished){
+	unsigned int t = mow_wait_time(next, now)+now+1; //Da qui
+	now++;
+	while(now < t && !finished){
 		seq.push_back(node(here,now++));
 		finished = (now > d.ni) || finished;
 	}
-	while(now < now+d.net.min_travel_time[train][next] && !finished) {
+	unsigned int end_of_travel = now+d.net.min_travel_time[train][next];
+	while(now < end_of_travel && !finished) {
+		std::cout << now << std::endl;
 		seq.push_back(node(next,now++));
 		finished = (now > d.ni) || finished;
 	}
@@ -193,7 +197,7 @@ auto solver_heuristic::mow_wait_time(unsigned int seg, unsigned int now) -> unsi
 
 auto inline solver_heuristic::choose_next(unsigned int here, unsigned int now) -> unsigned int{
 	std::pair<unsigned int, unsigned int> best = std::make_pair(0,5);;
-		for(const unsigned int& s : d.gr.bar_delta.at(train)){
+		for(const auto& s : d.gr.bar_delta.at(train).at(here)){
 			if(d.seg.type.at(s)>='0' && d.seg.type.at(s)<='2'){
 				if(!d.net.unpreferred.at(train).at(s)){
 					best = std::make_pair(s,0);
