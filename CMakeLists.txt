@@ -25,7 +25,12 @@ if(NEED_CPLEX)
     )
 else()
     set(USE_CPLEX_FLAG "false")
-    set(USE_CPLEX_SOURCE_FILES "")
+    set(USE_CPLEX_SOURCE_FILES
+	solver/solver_heuristic.h
+	solver/solver_heuristic.cpp
+	solver/sequential_solver_heuristic.h
+	solver/sequential_solver_heuristic.cpp
+)
 endif()
 
 # === BOOST
