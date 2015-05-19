@@ -55,8 +55,16 @@ path::path(const data& d, unsigned int train) : d{&d}, train{train}, cost{0.0} {
 }
 
 path::path(const data& d, unsigned int train, bv<node> p, double cost) : d{&d}, train{train}, cost{cost}, p{p}{
-	if (p.empty())
+	if (p.empty()){
 		make_dummy();
+		std::cout << "The train " <<  d.trn.name.at(train) << " could not be scheduled" << std::endl;
+	}
+	else{
+		std::cout << "Train " << d.trn.name.at(train) << ":" << std::endl;
+		for(const auto& n : p){
+			std::cout << "segment " << n.seg << ", at " << n.t << std::endl;
+		}
+	}
 
 }
 auto path::make_dummy() -> void {

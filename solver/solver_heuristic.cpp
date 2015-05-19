@@ -210,7 +210,7 @@ auto inline solver_heuristic::choose_next(unsigned int here, unsigned int now) -
 				best = std::make_pair(s,2);
 			}
 		}
-		assert(best.second<3);
+		assert(best.second<4);
 
 		return best.first;
 }
