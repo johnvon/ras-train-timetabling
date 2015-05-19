@@ -196,7 +196,7 @@ auto solver_heuristic::simple_single_scheduler() -> bv<node>{
 					best = std::make_pair(s,2);
 			}
 		}
-		/**/
+		*/
 	}
 	/* Verify if everything went ok and best did not remained (0,5) */
 	assert(best.second<3);
