@@ -20,13 +20,13 @@ auto solver_heuristic::solve()-> path{
 
 	uint_matrix_2d segments;	//Contains the ordered list of segments corresponding to the nodes to be visited (origin, SAs, destination)
 
-	segments.push_back(trn->orig_segs[train]);
-	for(auto i = 0u; i< trn->sa_num[train]; i++){
-		segments.push_back(trn->sa_segs[train][i]);
+	segments.push_back(trn->orig_segs.at(train));
+	for(auto i = 0u; i< trn->sa_num.at(train); i++){
+		segments.push_back(trn->sa_segs.at(train).at(i));
 	}
-	segments.push_back(trn->dest_segs[train]);
+	segments.push_back(trn->dest_segs.at(train));
 
-	unsigned int now = trn->entry_time[train];
+	unsigned int now = trn->entry_time.at(train);
 
 	//The path is built concatenating the partial paths that connect the nodes to be visited
 	bv<node> node_seq;
@@ -45,8 +45,8 @@ auto solver_heuristic::solve()-> path{
 		 * if it's at the origin we have the sigma segment and its arcs that are never deleted
 		 */
 		unsigned int src;
-		for(const unsigned int& prev : gr->bar_inverse_delta[train][segments[i][0]]){
-			if(gr->v[train][prev][now-1]){
+		for(const unsigned int& prev : gr->bar_inverse_delta.at(train).at(segments.at(i).at(0))){
+			if(gr->v.at(train).at(prev).at(now-1)){
 				src = prev;
 				break;
 			}
@@ -55,7 +55,7 @@ auto solver_heuristic::solve()-> path{
 		/*TODO maybe this segment is occupied when we finish and we have to wait, but another
 		 * segment could be free
 		 */
-		unsigned int dst = gr->bar_delta[train][segments[i+1][0]][0];
+		unsigned int dst = gr->bar_delta.at(train).at(segments.at(i+1).at(0)).at(0);
 
 		bv<node> greedy_result= dijkstra_extra_greedy(gr, trn, now-1, src, dst);
 		now = now + greedy_result.size();
@@ -72,7 +72,7 @@ auto solver_heuristic::solve()-> path{
 }
 
 auto solver_heuristic::dijkstra_extra_greedy(graph * gr, trains * trn, auto start, auto src_segment, auto dst_segment)-> bv<node> {
-	bv<bv<node>> previous (gr->v[train].size(), bv<node>(gr->v[train][src_segment].size(),node(src_segment, start)));
+	bv<bv<node>> previous (gr->v.at(train).size(), bv<node>(gr->v.at(train).at(src_segment).size(),node(src_segment, start)));
 
 	std::set<node> S;
 	S.insert(node(src_segment, start));
@@ -84,10 +84,10 @@ auto solver_heuristic::dijkstra_extra_greedy(graph * gr, trains * trn, auto star
 	while (!dst_found || !broken) {
 		broken = true;
 		for(const node& explored : S){
-			for (const unsigned int& connected : gr->delta[train][explored.seg]){
-				if(gr->adj[train][explored.seg][explored.t][connected] && S.find(node(connected, explored.t+1))!=S.end()){
+			for (const unsigned int& connected : gr->delta.at(train).at(explored.seg)){
+				if(gr->adj.at(train).at(explored.seg).at(explored.t).at(connected) && S.find(node(connected, explored.t+1))!=S.end()){
 					broken = false;
-					previous[connected][explored.t+1]=explored;
+					previous.at(connected).at(explored.t+1)=explored;
 					S.insert(node(connected, explored.t+1));
 					if(connected==dst_segment){
 						end=explored.t+1;
@@ -109,12 +109,12 @@ auto solver_heuristic::dijkstra_extra_greedy(graph * gr, trains * trn, auto star
 
 		while (actual.seg == src_segment && actual.t==start) {
 			next_seg = actual.seg;
-			actual = previous[actual.seg][actual.t];
-			cost += gr->costs[train][actual.seg][actual.t][next_seg];
+			actual = previous.at(actual.seg).at(actual.t);
+			cost += gr->costs.at(train).at(actual.seg).at(actual.t).at(next_seg);
 			shortest.push_back(actual);
 		}
 		shortest.erase(shortest.begin()+shortest.size()-1);
-		cost -= gr->costs[train][src_segment][start][next_seg];
+		cost -= gr->costs.at(train).at(src_segment).at(start).at(next_seg);
 
 		shortest=std::reverse(shortest.begin(), shortest.end());
 
@@ -122,16 +122,66 @@ auto solver_heuristic::dijkstra_extra_greedy(graph * gr, trains * trn, auto star
 	return shortest;	//restituisce il percorso come vettore di nodi, vuoto se non siamo riusciti a schedularlo
 }
 
+/*
+ * Simple scheduler that schdules train on an empty network.
+ * It returns the path as a vector of nodes.
+ */
+
 auto solver_heuristic::simple_single_scheduler() -> bv<node>{
-	auto segs = d.trn.orig_segs[train];
-	auto now = d.trn.entry_time[train];
+
+	/* The starting segments */
+	auto start_segs = d.trn.orig_segs.at(train);
+
+	/* The time at we are NOW. Of course the first "now" time is the entry time of train */
+	auto now = d.trn.entry_time.at(train);
+
+	/* The sequence of nodes. It's the path that returns at the end of the function */
 	bv<node> seq;
+
+	/* The segments were we are at time now */
 	unsigned int here = 0;
+
+	/* Initially, we are here and now (you don't say?)*/
 	seq.push_back(node(here,now));
+
+	/*
+	 * best is the pair (segment, score) that represents the best next segments analyzed and its score (the lower the better)
+	 * We start with all (0,5), where any score > 2 is invalid.
+	 */
 	std::pair<unsigned int, unsigned int> best = std::make_pair(0,5);;
-	for(const unsigned int& s : segs){
-		if(d.seg.type[s]>='0' && d.seg.type[s]<='2'){
-			if(!d.net.unpreferred[train][s]){
+
+	/*
+	 * For the origin segments we have scores:
+	 * 0 - Main track preferred
+	 * 1 - Main track unpreferred
+	 * 2 - Siding
+	 */
+	for(const unsigned int& s : start_segs){
+
+		switch(d.seg.type.at(s)) {
+		case '0':
+			best = std::make_pair(s,0);
+			break;
+
+		case '1':
+		case '2':
+			if(!d.net.unpreferred.at(train).at(s))
+				best = std::make_pair(s,0);
+			else if (best.second > 1)
+				best = std::make_pair(s,1);
+			break;
+
+		case 'S':
+			if(best.second > 2)
+				best = std::make_pair(s,2);
+			break;
+		default:
+		}
+		/*
+		 * Old if-then-else model. Keep it here for safe
+		 *
+		if(d.seg.type.at(s)>='0' && d.seg.type.at(s)<='2'){
+			if(!d.net.unpreferred.at(train).at(s)){
 				best = std::make_pair(s,0);
 				break;
 			}
@@ -141,27 +191,38 @@ auto solver_heuristic::simple_single_scheduler() -> bv<node>{
 			}
 		}
 		else{
-			if(d.seg.type[s]=='S'){
+			if(d.seg.type.at(s)=='S'){
 				if(best.second>2)
 					best = std::make_pair(s,2);
 			}
 		}
+		/**/
 	}
+	/* Verify if everything went ok and best did not remained (0,5) */
 	assert(best.second<3);
 
+	/* Boolean value that comes true if we arrive at the end of the travel or if we ran out of time */
 	bool finished = false;
 
+	/* Literaly, wait for the segments to become free, then travel through it */
 	wait_and_travel(here, best.first, now, seq, finished);
+
+	/*
+	 * Choosing next segments starting from here and now, then wait for it to be free and travel through it.
+	 * Checking if we arrived at the last segments. If yes, finished becomes true and we exit the loop.
+	 * At the end, here becomes next.
+	 */
 	unsigned int next;
 	while(!finished){
 		next = choose_next(here, now);
 		wait_and_travel(here, next, now, seq, finished);
-		for(const unsigned int& s : d.trn.dest_segs[train]) {
+		for(const unsigned int& s : d.trn.dest_segs.at(train)) {
 			finished = (next==s) || finished;
 		}
 		here = next;
 	}
 
+	/* Returns the sequence of nodes */
 	return seq;
 }
 
@@ -172,7 +233,7 @@ auto solver_heuristic::wait_and_travel(unsigned int here, unsigned int next, uns
 		seq.push_back(node(here,now++));
 		finished = (now > d.ni) || finished;
 	}
-	unsigned int end_of_travel = now+d.net.min_travel_time[train][next];
+	unsigned int end_of_travel = now+d.net.min_travel_time.at(train).at(next);
 	while(now < end_of_travel && !finished) {
 		seq.push_back(node(next,now++));
 		finished = (now > d.ni) || finished;
@@ -184,9 +245,9 @@ auto solver_heuristic::mow_wait_time(unsigned int seg, unsigned int now) -> unsi
 			t = now,
 			mow_time=now;
 	bool mowing = false;
-	while(t<=now+d.net.min_travel_time[train][seg] || mowing){
+	while(t<=now+d.net.min_travel_time.at(train).at(seg) || mowing){
 		mowing = false;
-		if(d.mnt.is_mow[seg][t]){
+		if(d.mnt.is_mow.at(seg).at(t)){
 			mow_time = t+1;
 			mowing = true;
 		}
