@@ -159,12 +159,13 @@ auto solver_heuristic::simple_single_scheduler() -> bv<node>{
 		for(const unsigned int& s : d.trn.dest_segs[train]) {
 			finished = (next==s) || finished;
 		}
+		here = next;
 	}
 
 	return seq;
 }
 
-auto solver_heuristic::wait_and_travel(unsigned int here, unsigned int next, unsigned int now, bv<node> &seq, bool &finished) -> void{
+auto solver_heuristic::wait_and_travel(unsigned int here, unsigned int next, unsigned int& now, bv<node> &seq, bool &finished) -> void{
 	unsigned int t = mow_wait_time(next, now)+now+1; //Da qui
 	now++;
 	while(now < t && !finished){
@@ -173,7 +174,6 @@ auto solver_heuristic::wait_and_travel(unsigned int here, unsigned int next, uns
 	}
 	unsigned int end_of_travel = now+d.net.min_travel_time[train][next];
 	while(now < end_of_travel && !finished) {
-		std::cout << now << std::endl;
 		seq.push_back(node(next,now++));
 		finished = (now > d.ni) || finished;
 	}
