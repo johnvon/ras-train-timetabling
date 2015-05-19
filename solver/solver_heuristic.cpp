@@ -175,7 +175,6 @@ auto solver_heuristic::simple_single_scheduler() -> bv<node>{
 			if(best.second > 2)
 				best = std::make_pair(s,2);
 			break;
-		default:
 		}
 		/*
 		 * Old if-then-else model. Keep it here for safe
