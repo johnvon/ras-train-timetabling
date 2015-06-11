@@ -226,7 +226,10 @@ auto solver_heuristic::simple_single_scheduler() -> bv<node>{
 }
 
 auto solver_heuristic::wait_and_travel(unsigned int here, unsigned int next, unsigned int& now, bv<node> &seq, bool &finished) -> void{
-	unsigned int t = mow_wait_time(next, now)+now+1; //Da qui
+	unsigned int t = now+1;
+	while(unsigned int wt = wait_time(next, t-1)){
+		t+=wt;
+	}
 	now++;
 	while(now < t && !finished){
 		seq.push_back(node(here,now++));
@@ -239,20 +242,20 @@ auto solver_heuristic::wait_and_travel(unsigned int here, unsigned int next, uns
 	}
 }
 
-auto solver_heuristic::mow_wait_time(unsigned int seg, unsigned int now) -> unsigned int{
+auto solver_heuristic::wait_time(unsigned int seg, unsigned int now) -> unsigned int{
 	unsigned int
 			t = now,
-			mow_time=now;
-	bool mowing = false;
-	while(t<=now+d.net.min_travel_time.at(train).at(seg) || mowing){
-		mowing = false;
-		if(d.mnt.is_mow.at(seg).at(t)){
-			mow_time = t+1;
-			mowing = true;
+			time_to_wait=now;
+	bool busy = false;
+	while(t<=now+d.net.min_travel_time.at(train).at(seg) || busy){
+		busy = false;
+		if(d.gr.v.at(train).at(seg).at(t)){
+			time_to_wait = t+1;
+			busy = true;
 		}
 		t++;
 	}
-	return mow_time-now;
+	return time_to_wait-now;
 }
 
 auto inline solver_heuristic::choose_next(unsigned int here, unsigned int now) -> unsigned int{

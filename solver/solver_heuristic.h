@@ -33,7 +33,7 @@ private:
 	auto simple_single_scheduler() -> bv<node>;
 
 	/* Returns the time to wait in case the segment is under maintenance (0 if free) with free network*/
-	auto mow_wait_time(unsigned int seg, unsigned int now) -> unsigned int;
+	auto wait_time(unsigned int seg, unsigned int now) -> unsigned int;
 
 	/* Insert the nodes relative to the wait on current segment (in case the next one is under maintenance) and to reach
 	 * the end of the next segment with free network
