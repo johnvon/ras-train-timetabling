@@ -22,6 +22,7 @@ struct solver_heuristic {
 public:
 	data& d;
 	unsigned int train;
+	double cost;
 
 	auto solve() -> path;
 	solver_heuristic(data& d, unsigned int train): d{d}, train{train} {}

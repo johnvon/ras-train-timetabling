@@ -67,7 +67,8 @@ auto solver_heuristic::solve()-> path{
 	return path(d, train, node_seq, node_seq.size());
 #endif
 
-	return path(d, train, simple_single_scheduler(), 0);
+	cost=0;
+	return path(d, train, simple_single_scheduler(), cost);
 
 }
 
@@ -220,7 +221,7 @@ auto solver_heuristic::simple_single_scheduler() -> bv<node>{
 		}
 		here = next;
 	}
-
+	seq.push_back(node(d.ns+1,now++));
 	/* Returns the sequence of nodes */
 	return seq;
 }
@@ -232,6 +233,9 @@ auto solver_heuristic::wait_and_travel(unsigned int here, unsigned int next, uns
 	}
 	now++;
 	while(now < t && !finished){
+		//cost increases by the arc cost from the last visited segment at now to the current segment at now+1
+		cost+=d.gr.costs.at(train).at(seq.at(seq.size()).seg).at(now).at(here);
+		cost+=d.pri.delay.at(d.trn.type.at(train));
 		seq.push_back(node(here,now++));
 		finished = (now > d.ni) || finished;
 	}
