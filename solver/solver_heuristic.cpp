@@ -249,7 +249,7 @@ auto solver_heuristic::wait_time(unsigned int seg, unsigned int now) -> unsigned
 	bool busy = false;
 	while(t<=now+d.net.min_travel_time.at(train).at(seg) || busy){
 		busy = false;
-		if(d.gr.v.at(train).at(seg).at(t)){
+		if(!d.gr.v.at(train).at(seg).at(t)){
 			time_to_wait = t+1;
 			busy = true;
 		}

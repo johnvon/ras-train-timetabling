@@ -12,7 +12,7 @@
 #include <limits>
 
 auto solver::solve() -> boost::optional<bv<path>> {
-    using namespace std::chrono;
+    using namespace chrono;
     
     auto t_start = high_resolution_clock::time_point();
     auto t_end = high_resolution_clock::time_point();
