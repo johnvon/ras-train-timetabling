@@ -14,12 +14,12 @@
 
 
 auto sequential_solver_heuristic::solve_sequentially() -> boost::optional<bv<path>> {
-    auto trains_to_schedule = uint_vector();
+	auto trains_to_schedule = uint_vector();
 	bv<path> paths;
 
-    for(auto i = 0u; i < d.nt; i++) {
-        paths.push_back(path(d, i));
-    }
+	for(auto i = 0u; i < d.nt; i++) {
+		paths.push_back(path(d, i));
+	}
 
 	for (unsigned int train = 0; train < d.nt; train++) {
 		auto local_d = d;
@@ -27,37 +27,23 @@ auto sequential_solver_heuristic::solve_sequentially() -> boost::optional<bv<pat
 		trains_to_schedule.push_back(train);
 		paths.at(train).make_empty();
 
-        std::cout << "SEQUENTIAL_SOLVER >> Trains to schedule: ";
-        std::copy(trains_to_schedule.begin(), trains_to_schedule.end(), std::ostream_iterator<unsigned int>(std::cout, " "));
-        std::cout << std::endl;
+		std::cout << "SEQUENTIAL_SOLVER >> Trains to schedule: ";
+		std::copy(trains_to_schedule.begin(), trains_to_schedule.end(), std::ostream_iterator<unsigned int>(std::cout, " "));
+		std::cout << std::endl;
 
-        local_d.gr.only_trains(trains_to_schedule, d.nt, d.ns, d.ni);
-        constrain_graph_by_paths(local_d.gr, paths);
+		local_d.gr.only_trains(trains_to_schedule, d.nt, d.ns, d.ni);
+		constrain_graph_by_paths(local_d.gr, paths);
 
 		auto s = solver_heuristic(local_d,train); //crea e invoca il solver
 		auto p_sol = s.solve();
 
 		paths.at(train) = p_sol;
-
-		if(p_sol) {
-			paths.push_back(p_sol);
-			std::cout << "SEQUENTIAL_SOLVER >> Paths: "<< std::endl;
-			for(const auto& p : paths) {
-				if(!p.is_dummy()) {
-					std::cout << "\tTrain " << p.train << ", cost: " << p.cost << std::endl;
-				}
+		std::cout << "SEQUENTIAL_SOLVER >> Paths: "<< std::endl;
+		for(const auto& p : paths) {
+			if(!p.is_dummy()) {
+				std::cout << "\tTrain " << p.train << ", cost: " << p.cost << std::endl;
 			}
-		} else {
-			if(train > 0u) {
-				std::cout << "SEQUENTIAL_SOLVER >> Scheduled trains: ";
-				std::copy(trains_to_schedule.begin(), trains_to_schedule.end() - 1, std::ostream_iterator<unsigned int>(std::cout, " "));
-				std::cout << "- Could not schedule train: " << train << std::endl;
-			} else {
-				std::cout << "SEQUENTIAL SOLVER >> Could not schedule any train!" << std::endl;
-			}
-			break;
 		}
-
 	}
 	return paths;
 }

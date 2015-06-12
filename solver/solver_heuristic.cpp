@@ -10,11 +10,10 @@
 #include <assert.h>
 
 
-//TODO: SUBSTITUTE SQUARE BRACKETS WITH .at(i)
-
 auto solver_heuristic::solve()-> path{
 
-	return path(d, train, simple_single_scheduler(), cost);
+	auto current_path = simple_single_scheduler();
+	return path(d, train, current_path, cost);
 
 }
 
@@ -123,33 +122,35 @@ auto solver_heuristic::simple_single_scheduler() -> bv<node>{
 
 auto solver_heuristic::wait_and_travel(unsigned int here, unsigned int next, unsigned int& now, bv<node> &seq, bool &finished) -> void{
 	unsigned int t = now+1;
-	while(unsigned int wt = wait_time(next, t-1)){
+	while(unsigned int wt = wait_time(here, next, t-1)){
 		t+=wt;
 	}
 	now++;
 	while(now < t && !finished){
 		//cost increases by the arc cost from the last visited segment at now to the current segment at now+1
-		cost+=d.gr.costs.at(train).at(seq.at(seq.size()).seg).at(now).at(here);
+		cost+=d.gr.costs.at(train).at(seq.at(seq.size()-1).seg).at(now).at(here);
 		cost+=d.pri.delay.at(d.trn.type.at(train));
 		seq.push_back(node(here,now++));
 		finished = (now > d.ni) || finished;
 	}
 	unsigned int end_of_travel = now+d.net.min_travel_time.at(train).at(next);
 	while(now < end_of_travel && !finished) {
-		cost+=d.gr.costs.at(train).at(seq.at(seq.size()).seg).at(now).at(next);
+		cost+=d.gr.costs.at(train).at(seq.at(seq.size()-1).seg).at(now).at(next);
 		seq.push_back(node(next,now++));
 		finished = (now > d.ni) || finished;
 	}
 }
 
-auto solver_heuristic::wait_time(unsigned int seg, unsigned int now) -> unsigned int{
+auto solver_heuristic::wait_time(unsigned int here, unsigned int seg, unsigned int now) -> unsigned int{
 	unsigned int
 			t = now,
-			time_to_wait=now;
+			time_to_wait=now,
+			prev_seg = here;
 	bool busy = false;
-	while(t<=now+d.net.min_travel_time.at(train).at(seg) || busy){
+	while(t <= d.ni && (t<=now+d.net.min_travel_time.at(train).at(seg) || busy)){
 		busy = false;
-		if(!d.gr.v.at(train).at(seg).at(t)){
+		if (t != now) prev_seg = seg;
+		if(!d.gr.adj.at(train).at(prev_seg).at(t).at(seg)){
 			time_to_wait = t+1;
 			busy = true;
 		}
