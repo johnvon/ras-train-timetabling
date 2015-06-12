@@ -25,11 +25,9 @@ public:
 	double cost;
 
 	auto solve() -> path;
-	solver_heuristic(data& d, unsigned int train): d{d}, train{train} {}
+	solver_heuristic(data& d, unsigned int train): d{d}, train{train}, cost{0} {}
 
 private:
-	auto dijkstra_extra_greedy(graph * gr, trains * trn, auto start, auto src_segments, auto dst_segments) -> bv<node>;
-
 	/* Returns the sequence of nodes (segment, instant) of the schedule for "train" with free network */
 	auto simple_single_scheduler() -> bv<node>;
 
@@ -43,6 +41,7 @@ private:
 
 	/* Returns the next segment (policy: main preferred > siding > crossover > main unpreferred) */
 	auto inline choose_next(unsigned int here, unsigned int now) -> unsigned int;
+
 };
 
 #endif /* SOLVER_SOLVER_HEURISTIC_H_ */
