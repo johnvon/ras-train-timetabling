@@ -60,9 +60,12 @@ path::path(const data& d, unsigned int train, bv<node> p, double cost) : d{&d}, 
 		std::cout << "The train " <<  d.trn.name.at(train) << " could not be scheduled" << std::endl;
 	}
 	else{
+		x = bv<bv<bv<unsigned int>>>(d.ns+2, bv<bv<unsigned int>>(d.ni+1, bv<unsigned int> (d.ns+2,0)));
 		std::cout << "Train " << d.trn.name.at(train) << ":" << std::endl;
-		for(const auto& n : p){
-			std::cout << "segment " << n.seg << ", at " << n.t << std::endl;
+		std::cout << "segment " << p.at(0).seg << ", at " << p.at(0).t << std::endl;
+		for(unsigned int n=1; n<p.size(); n++){
+			x.at(p.at(n-1).seg).at(p.at(n-1).t).at(p.at(n).seg)=1;
+			std::cout << "segment " << p.at(n).seg << ", at " << p.at(n).t << std::endl;
 		}
 	}
 
