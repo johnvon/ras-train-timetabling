@@ -241,6 +241,7 @@ auto solver_heuristic::wait_and_travel(unsigned int here, unsigned int next, uns
 	}
 	unsigned int end_of_travel = now+d.net.min_travel_time.at(train).at(next);
 	while(now < end_of_travel && !finished) {
+		cost+=d.gr.costs.at(train).at(seq.at(seq.size()).seg).at(now).at(next);
 		seq.push_back(node(next,now++));
 		finished = (now > d.ni) || finished;
 	}
