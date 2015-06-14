@@ -28,7 +28,7 @@ auto solver_heuristic::simple_single_scheduler() -> bv<node>{
 	auto start_segs = d.trn.orig_segs.at(train);
 
 	/* The time at we are NOW. Of course the first "now" time is the entry time of train */
-	auto now = d.trn.entry_time.at(train);
+	auto now = d.trn.entry_time.at(train)-1;
 
 	/* The sequence of nodes. It's the path that returns at the end of the function */
 	bv<node> seq;
@@ -36,9 +36,7 @@ auto solver_heuristic::simple_single_scheduler() -> bv<node>{
 	/* The segments were we are at time now */
 	unsigned int here = 0;
 
-	/* Initially, we are here and now (you don't say?)*/
 	seq.push_back(node(here,now));
-
 	/*
 	 * best is the pair (segment, score) that represents the best next segments analyzed and its score (the lower the better)
 	 * We start with all (0,5), where any score > 2 is invalid.
@@ -100,6 +98,7 @@ auto solver_heuristic::simple_single_scheduler() -> bv<node>{
 
 	/* Literaly, wait for the segments to become free, then travel through it */
 	wait_and_travel(here, best.first, now, seq, finished);
+	here=best.first;
 
 	/*
 	 * Choosing next segments starting from here and now, then wait for it to be free and travel through it.
@@ -109,35 +108,38 @@ auto solver_heuristic::simple_single_scheduler() -> bv<node>{
 	unsigned int next;
 	while(!finished){
 		next = choose_next(here, now);
+
 		wait_and_travel(here, next, now, seq, finished);
 		for(const unsigned int& s : d.trn.dest_segs.at(train)) {
 			finished = (next==s) || finished;
 		}
 		here = next;
 	}
-	seq.push_back(node(d.ns+1,now++));
+	seq.push_back(node(d.ns+1,++now));
 	/* Returns the sequence of nodes */
 	return seq;
 }
 
 auto solver_heuristic::wait_and_travel(unsigned int here, unsigned int next, unsigned int& now, bv<node> &seq, bool &finished) -> void{
-	unsigned int t = now+1;
-	while(unsigned int wt = wait_time(here, next, t-1)){
+	unsigned int t = now;
+	while(unsigned int wt = wait_time(here, next, t)){
 		t+=wt;
 	}
-	now++;
+
 	while(now < t && !finished){
 		//cost increases by the arc cost from the last visited segment at now to the current segment at now+1
 		cost+=d.gr.costs.at(train).at(seq.at(seq.size()-1).seg).at(now).at(here);
 		cost+=d.pri.delay.at(d.trn.type.at(train));
-		seq.push_back(node(here,now++));
-		finished = (now > d.ni) || finished;
+		now++;
+		seq.push_back(node(here,now));
+		finished = (now >= d.ni) || finished;
 	}
 	unsigned int end_of_travel = now+d.net.min_travel_time.at(train).at(next);
 	while(now < end_of_travel && !finished) {
 		cost+=d.gr.costs.at(train).at(seq.at(seq.size()-1).seg).at(now).at(next);
-		seq.push_back(node(next,now++));
-		finished = (now > d.ni) || finished;
+		now++;
+		seq.push_back(node(next,now));
+		finished = (now >= d.ni) || finished;
 	}
 }
 
@@ -147,9 +149,15 @@ auto solver_heuristic::wait_time(unsigned int here, unsigned int seg, unsigned i
 			time_to_wait=now,
 			prev_seg = here;
 	bool busy = false;
-	while(t <= d.ni && (t<=now+d.net.min_travel_time.at(train).at(seg) || busy)){
+
+	while(t <= d.ni && (t<now+d.net.min_travel_time.at(train).at(seg) || busy)){
+		if (t == now || busy)
+			prev_seg = here;
+		else
+			prev_seg = seg;
 		busy = false;
-		if (t != now) prev_seg = seg;
+		//std::cout<<prev_seg<<", "<< seg<<", "<<t<<", "<<d.gr.adj.at(train).at(prev_seg).at(t).at(seg)<<std::endl;
+
 		if(!d.gr.adj.at(train).at(prev_seg).at(t).at(seg)){
 			time_to_wait = t+1;
 			busy = true;
@@ -179,7 +187,6 @@ auto inline solver_heuristic::choose_next(unsigned int here, unsigned int now) -
 			}
 		}
 		assert(best.second<4);
-
 		return best.first;
 }
 

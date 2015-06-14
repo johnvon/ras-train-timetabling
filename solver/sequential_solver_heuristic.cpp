@@ -11,6 +11,8 @@
 #include <solver/solver_heuristic.h>
 
 #include <iostream>
+#include <fstream>
+
 
 
 auto sequential_solver_heuristic::solve_sequentially() -> boost::optional<bv<path>> {
@@ -23,6 +25,18 @@ auto sequential_solver_heuristic::solve_sequentially() -> boost::optional<bv<pat
 
 	for (unsigned int train = 0; train < d.nt; train++) {
 		auto local_d = d;
+
+		//Saves the v matrix for the current train
+		auto name = "v" + std::to_string(train) + ".txt";
+
+		std::ofstream f (name);
+		for(unsigned int i=0; i<d.ns+2; i++){
+			for(unsigned int j=0; j<d.ni+1; j++){
+				f<<d.gr.v.at(train).at(i).at(j);
+			}
+			f<<"\n";
+		}
+
 
 		trains_to_schedule.push_back(train);
 		paths.at(train).make_empty();

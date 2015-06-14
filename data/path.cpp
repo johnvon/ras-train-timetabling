@@ -67,6 +67,7 @@ path::path(const data& d, unsigned int train, bv<node> p, double cost) : d{&d}, 
 			x.at(p.at(n-1).seg).at(p.at(n-1).t).at(p.at(n).seg)=1;
 			std::cout << "segment " << p.at(n).seg << ", at " << p.at(n).t << std::endl;
 		}
+		std::cout<<"minimum time to arrive: "<<d.net.min_time_to_arrive.at(train).at(p.at(p.size()-2).seg)+d.net.min_travel_time.at(train).at(p.at(p.size()-2).seg)<<std::endl<<std::endl;
 	}
 
 }
